@@ -1,7 +1,7 @@
 {
-  "name": "@noreflow/stream-ui",
+  "name": "nopointer",
   "version": "0.1.0",
-  "description": "Zero-reflow streaming UI components. Canvas-rendered chat built on noreflow + pretext.",
+  "description": "Pure TypeScript hit-testing + pointer event system. Spatial queries, gesture recognition, and event propagation for Canvas/WebGPU UIs. No DOM.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -31,39 +31,34 @@
     "prepublishOnly": "pnpm run build"
   },
   "keywords": [
-    "streaming",
-    "chat",
+    "hit-testing",
+    "pointer-events",
+    "gesture-recognition",
     "canvas",
-    "layout",
+    "webgpu",
+    "event-system",
+    "spatial-query",
     "noreflow",
-    "pretext",
-    "zero-reflow",
-    "ai-chat",
-    "virtual-scroll"
+    "nopointer",
+    "ui-framework"
   ],
   "author": "Jake Peterson",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/jbpete87/noreflow",
-    "directory": "packages/stream-ui"
+    "directory": "packages/nopointer"
   },
-  "homepage": "https://github.com/jbpete87/noreflow/tree/main/packages/stream-ui",
+  "homepage": "https://github.com/jbpete87/noreflow/tree/main/packages/nopointer",
   "bugs": {
     "url": "https://github.com/jbpete87/noreflow/issues"
   },
+  "sideEffects": false,
   "peerDependencies": {
-    "noreflow": ">=0.1.0",
-    "nopointer": ">=0.1.0",
-    "@chenglou/pretext": ">=0.0.3",
-    "react": ">=18.0.0"
+    "noreflow": ">=0.1.0"
   },
   "devDependencies": {
     "noreflow": "workspace:*",
-    "nopointer": "workspace:*",
-    "@chenglou/pretext": "^0.0.3",
-    "react": "^19.1.0",
-    "@types/react": "^19.1.2",
     "tsup": "^8.5.1",
     "typescript": "^6.0.2",
     "vitest": "^4.1.2"

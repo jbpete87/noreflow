@@ -18,6 +18,9 @@ export interface DrawOptions {
   streamingLines: number;
   sidebarItems?: string[];
   activeItemIdx?: number;
+  hoveredItemIdx?: number;
+  /** Explicit scroll offset. When undefined, auto-scrolls to bottom. */
+  scrollOffset?: number;
   title?: string;
   subtitle?: string;
   placeholder?: string;
@@ -32,7 +35,7 @@ export function drawChat(ctx: CanvasRenderingContext2D, opts: DrawOptions) {
     msgsLayout, headerLayout, inputLayout, sidebarLayout,
     messages, canvasW, canvasH, showSidebar, contentWidth,
     streamingIdx, streamingHeight, streamingLines,
-    sidebarItems = [], activeItemIdx = 1,
+    sidebarItems = [], activeItemIdx = 1, hoveredItemIdx = -1,
     title = 'AI Chat', subtitle = 'GPT-4 class',
     placeholder = 'Ask anything...',
   } = opts;
@@ -60,8 +63,15 @@ export function drawChat(ctx: CanvasRenderingContext2D, opts: DrawOptions) {
       const item = sidebarLayout.children[i]!;
       const isActive = i === activeItemIdx + 1;
 
+      const isHovered = (i - 1) === hoveredItemIdx;
+
       if (isActive) {
         ctx.fillStyle = theme.accentGlow;
+        ctx.beginPath();
+        ctx.roundRect(10, item.y, config.sidebarWidth - 20, item.height, 8);
+        ctx.fill();
+      } else if (isHovered) {
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
         ctx.beginPath();
         ctx.roundRect(10, item.y, config.sidebarWidth - 20, item.height, 8);
         ctx.fill();
@@ -103,7 +113,7 @@ export function drawChat(ctx: CanvasRenderingContext2D, opts: DrawOptions) {
   ctx.clip();
 
   const totalH = msgsLayout.height;
-  const scrollOff = Math.max(0, totalH - visibleHeight);
+  const scrollOff = opts.scrollOffset ?? Math.max(0, totalH - visibleHeight);
 
   for (let i = 0; i < msgsLayout.children.length; i++) {
     const ml = msgsLayout.children[i]!;

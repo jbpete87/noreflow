@@ -1,10 +1,13 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { computeLayout } from 'noreflow';
+import { createPointerSession, createScrollState } from 'nopointer';
+import type { PointerSession, ScrollState, NoPointerEvent } from 'nopointer';
 import type { StreamMessage, StreamChatConfig, StreamTheme } from './types';
 import { DEFAULT_CONFIG, DEFAULT_THEME } from './types';
 import { measureMessage, buildChatLayout, type MeasuredMessage } from './layout';
 import { createTextHandle } from './textMeasure';
 import { drawChat } from './renderer';
+import { buildChatScene } from './scene';
 
 export interface UseStreamLayoutResult {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -23,6 +26,8 @@ export interface UseStreamLayoutOpts {
   subtitle?: string;
   placeholder?: string;
   onFrame?: (stats: { nodeCount: number; layoutMs: number }) => void;
+  onSidebarItemClick?: (index: number) => void;
+  onSendClick?: () => void;
 }
 
 export function useStreamLayout(opts: UseStreamLayoutOpts): UseStreamLayoutResult {
@@ -32,7 +37,6 @@ export function useStreamLayout(opts: UseStreamLayoutOpts): UseStreamLayoutResul
   const rafRef = useRef(0);
   const [nodeCount, setNodeCount] = useState(0);
 
-  // Keep latest opts in a ref so callbacks never go stale and never change identity
   const optsRef = useRef(opts);
   optsRef.current = opts;
 
@@ -44,6 +48,49 @@ export function useStreamLayout(opts: UseStreamLayoutOpts): UseStreamLayoutResul
   const themeRef = useRef<StreamTheme>({ ...DEFAULT_THEME, ...(opts.theme ?? {}) });
   themeRef.current = { ...DEFAULT_THEME, ...(opts.theme ?? {}) };
 
+  // nopointer state
+  const sessionRef = useRef<PointerSession>(createPointerSession());
+  const scrollRef = useRef<ScrollState>(createScrollState({ friction: 0.994 }));
+  const hoveredItemRef = useRef(-1);
+  const lastFrameTimeRef = useRef(0);
+  // Track whether user has manually scrolled away from bottom
+  const userScrolledRef = useRef(false);
+
+  const handleEvents = useCallback((events: NoPointerEvent[]) => {
+    const o = optsRef.current;
+    for (const evt of events) {
+      if (evt.type === 'wheel') {
+        scrollRef.current.scrollBy(evt.deltaY);
+        userScrolledRef.current = true;
+      }
+      if (evt.type === 'scroll') {
+        scrollRef.current.scrollBy(-evt.deltaY);
+        userScrolledRef.current = true;
+      }
+      if (evt.type === 'scrollend') {
+        // Fling: use the last delta as an impulse
+        scrollRef.current.impulse(-evt.deltaY * 0.02);
+      }
+      if (evt.type === 'pointerenter' || evt.type === 'pointerleave') {
+        const data = evt.target.data as Record<string, unknown> | undefined;
+        if (data?.role === 'sidebarItem') {
+          hoveredItemRef.current = evt.type === 'pointerenter'
+            ? (data.index as number)
+            : -1;
+        }
+      }
+      if (evt.type === 'tap') {
+        const data = evt.target.data as Record<string, unknown> | undefined;
+        if (data?.role === 'sidebarItem' && o.onSidebarItemClick) {
+          o.onSidebarItemClick(data.index as number);
+        }
+        if (data?.role === 'sendBtn' && o.onSendClick) {
+          o.onSendClick();
+        }
+      }
+    }
+  }, []);
+
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -53,6 +100,11 @@ export function useStreamLayout(opts: UseStreamLayoutOpts): UseStreamLayoutResul
     const o = optsRef.current;
     const config = configRef.current;
     const theme = themeRef.current;
+    const scroll = scrollRef.current;
+
+    const now = performance.now();
+    const dt = lastFrameTimeRef.current > 0 ? now - lastFrameTimeRef.current : 16;
+    lastFrameTimeRef.current = now;
 
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
@@ -77,9 +129,27 @@ export function useStreamLayout(opts: UseStreamLayoutOpts): UseStreamLayoutResul
     setNodeCount(chatLayout.nodeCount);
     o.onFrame?.({ nodeCount: chatLayout.nodeCount, layoutMs });
 
+    // Update scroll bounds based on content height
+    const visibleHeight = H - config.headerHeight - config.inputHeight;
+    const maxScroll = Math.max(0, msgsLayout.height - visibleHeight);
+    scroll.setBounds(0, maxScroll);
+
+    // Auto-scroll to bottom during streaming (unless user manually scrolled up)
+    const sIdx = streamingIdxRef.current;
+    if (sIdx >= 0 && !userScrolledRef.current) {
+      scroll.scrollTo(maxScroll);
+    }
+
+    // Snap back to auto-scroll if user scrolls near the bottom
+    if (userScrolledRef.current && scroll.offset >= maxScroll - 5) {
+      userScrolledRef.current = false;
+    }
+
+    // Tick scroll momentum
+    scroll.tick(dt);
+
     let streamingHeight = 0;
     let streamingLines = 0;
-    const sIdx = streamingIdxRef.current;
     if (sIdx >= 0 && sIdx < msgsLayout.children.length) {
       const ml = msgsLayout.children[sIdx]!;
       const contentCol = ml.children[1];
@@ -94,6 +164,13 @@ export function useStreamLayout(opts: UseStreamLayoutOpts): UseStreamLayoutResul
         }
       }
     }
+
+    // Build scene for hit-testing (stored in ref for event handlers)
+    sceneRef.current = buildChatScene(
+      msgsLayout, headerLayout, inputLayout, sidebarLayout,
+      chatLayout.showSidebar, chatLayout.contentWidth,
+      W, H, config,
+    );
 
     drawChat(ctx, {
       msgsLayout, headerLayout, inputLayout, sidebarLayout,
@@ -110,10 +187,77 @@ export function useStreamLayout(opts: UseStreamLayoutOpts): UseStreamLayoutResul
       placeholder: o.placeholder,
       theme,
       config,
+      scrollOffset: scroll.offset,
+      hoveredItemIdx: hoveredItemRef.current,
     });
 
+    // Cursor management
+    const session = sessionRef.current;
+    const hovered = session.hoveredNode;
+    if (hovered?.cursor) {
+      canvas.style.cursor = hovered.cursor;
+    } else {
+      canvas.style.cursor = 'default';
+    }
+
     rafRef.current = requestAnimationFrame(draw);
-  }, []); // stable — reads everything from refs
+  }, []);
+
+  const sceneRef = useRef<ReturnType<typeof buildChatScene> | null>(null);
+
+  // Attach pointer/wheel event listeners to the canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const session = sessionRef.current;
+
+    function getCanvasCoords(e: PointerEvent | WheelEvent): [number, number] {
+      const rect = canvas!.getBoundingClientRect();
+      return [e.clientX - rect.left, e.clientY - rect.top];
+    }
+
+    function onPointerDown(e: PointerEvent): void {
+      if (!sceneRef.current) return;
+      const [x, y] = getCanvasCoords(e);
+      const events = session.down(x, y, sceneRef.current.root, e.timeStamp);
+      handleEvents(events);
+    }
+
+    function onPointerMove(e: PointerEvent): void {
+      if (!sceneRef.current) return;
+      const [x, y] = getCanvasCoords(e);
+      const events = session.move(x, y, sceneRef.current.root, e.timeStamp);
+      handleEvents(events);
+    }
+
+    function onPointerUp(e: PointerEvent): void {
+      if (!sceneRef.current) return;
+      const [x, y] = getCanvasCoords(e);
+      const events = session.up(x, y, sceneRef.current.root, e.timeStamp);
+      handleEvents(events);
+    }
+
+    function onWheel(e: WheelEvent): void {
+      if (!sceneRef.current) return;
+      e.preventDefault();
+      const [x, y] = getCanvasCoords(e);
+      const events = session.wheel(x, y, e.deltaX, e.deltaY, sceneRef.current.root, e.timeStamp);
+      handleEvents(events);
+    }
+
+    canvas.addEventListener('pointerdown', onPointerDown);
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+
+    return () => {
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', onPointerUp);
+      canvas.removeEventListener('wheel', onWheel);
+    };
+  }, [handleEvents]);
 
   useEffect(() => {
     rafRef.current = requestAnimationFrame(draw);
@@ -127,7 +271,7 @@ export function useStreamLayout(opts: UseStreamLayoutOpts): UseStreamLayoutResul
     if (messagesRef.current.length > config.maxMessages) {
       messagesRef.current = messagesRef.current.slice(-config.maxMessages);
     }
-  }, []); // stable
+  }, []);
 
   const updateMessage = useCallback((id: string | number, text: string) => {
     const config = configRef.current;
@@ -142,11 +286,13 @@ export function useStreamLayout(opts: UseStreamLayoutOpts): UseStreamLayoutResul
     };
     messagesRef.current = [...messagesRef.current];
     messagesRef.current[idx] = updated;
-  }, []); // stable
+  }, []);
 
   const clearMessages = useCallback(() => {
     messagesRef.current = [];
     streamingIdxRef.current = -1;
+    scrollRef.current.scrollTo(0);
+    userScrolledRef.current = false;
   }, []);
 
   const setStreamingIdx = useCallback((idx: number) => {

@@ -18,5 +18,8 @@ export { measureMessage, buildMessageNode, buildChatLayout } from './layout';
 export type { DrawOptions } from './renderer';
 export { drawChat } from './renderer';
 
+export type { ChatScene } from './scene';
+export { buildChatScene } from './scene';
+
 export type { UseStreamLayoutResult, UseStreamLayoutOpts } from './hooks';
 export { useStreamLayout } from './hooks';
