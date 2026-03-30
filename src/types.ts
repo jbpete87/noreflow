@@ -37,16 +37,48 @@ export type AlignContent =
   | 'space-between'
   | 'space-around';
 
-export type Display = 'flex' | 'none';
+export type Display = 'flex' | 'grid' | 'none';
+
+export type Position = 'static' | 'relative' | 'absolute';
 
 export type BoxSizing = 'content-box' | 'border-box';
 
 /**
- * Style properties for a flex container or flex item.
+ * Inset value for top/right/bottom/left: pixels, percentage, or "auto".
+ */
+export type InsetValue = number | `${number}%` | 'auto';
+
+// ---------------------------------------------------------------------------
+// Grid types
+// ---------------------------------------------------------------------------
+
+/**
+ * A single track size definition.
+ * - number: fixed pixels
+ * - `${number}%`: percentage of the container's content size
+ * - `${number}fr`: flexible fraction of remaining space
+ * - 'auto': sized to content (min-content to max-content)
+ */
+export type TrackSize = number | `${number}%` | `${number}fr` | 'auto';
+
+export type GridAutoFlow = 'row' | 'column';
+
+/**
+ * Grid item placement value: a 1-based line number or 'auto'.
+ */
+export type GridLine = number | 'auto';
+
+export type JustifyItems = 'start' | 'end' | 'center' | 'stretch';
+
+export type JustifySelf = 'auto' | JustifyItems;
+
+/**
+ * Style properties for a layout node (flex or grid container, or child item).
  * All properties are optional and default to CSS spec initial values.
  */
 export interface FlexStyle {
   display?: Display;
+  position?: Position;
 
   flexDirection?: FlexDirection;
   flexWrap?: FlexWrap;
@@ -54,6 +86,21 @@ export interface FlexStyle {
   alignItems?: AlignItems;
   alignSelf?: AlignSelf;
   alignContent?: AlignContent;
+  justifyItems?: JustifyItems;
+  justifySelf?: JustifySelf;
+
+  // Grid container properties
+  gridTemplateColumns?: TrackSize[];
+  gridTemplateRows?: TrackSize[];
+  gridAutoColumns?: TrackSize;
+  gridAutoRows?: TrackSize;
+  gridAutoFlow?: GridAutoFlow;
+
+  // Grid item placement
+  gridColumnStart?: GridLine;
+  gridColumnEnd?: GridLine;
+  gridRowStart?: GridLine;
+  gridRowEnd?: GridLine;
 
   flexGrow?: number;
   flexShrink?: number;
@@ -65,6 +112,15 @@ export interface FlexStyle {
   minHeight?: DimensionValue;
   maxWidth?: DimensionValue;
   maxHeight?: DimensionValue;
+
+  top?: InsetValue;
+  right?: InsetValue;
+  bottom?: InsetValue;
+  left?: InsetValue;
+
+  zIndex?: number;
+
+  aspectRatio?: number;
 
   padding?: number;
   paddingTop?: number;
@@ -146,6 +202,7 @@ export interface EdgeSizes {
  */
 export interface ResolvedStyle {
   display: Display;
+  position: Position;
 
   flexDirection: FlexDirection;
   flexWrap: FlexWrap;
@@ -153,6 +210,19 @@ export interface ResolvedStyle {
   alignItems: AlignItems;
   alignSelf: AlignSelf;
   alignContent: AlignContent;
+  justifyItems: JustifyItems;
+  justifySelf: JustifySelf;
+
+  gridTemplateColumns: TrackSize[];
+  gridTemplateRows: TrackSize[];
+  gridAutoColumns: TrackSize;
+  gridAutoRows: TrackSize;
+  gridAutoFlow: GridAutoFlow;
+
+  gridColumnStart: GridLine;
+  gridColumnEnd: GridLine;
+  gridRowStart: GridLine;
+  gridRowEnd: GridLine;
 
   flexGrow: number;
   flexShrink: number;
@@ -164,6 +234,15 @@ export interface ResolvedStyle {
   minHeight: DimensionValue;
   maxWidth: DimensionValue;
   maxHeight: DimensionValue;
+
+  top: InsetValue;
+  right: InsetValue;
+  bottom: InsetValue;
+  left: InsetValue;
+
+  zIndex: number;
+
+  aspectRatio: number | undefined;
 
   paddingTop: number;
   paddingRight: number;

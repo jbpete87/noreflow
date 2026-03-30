@@ -26,9 +26,9 @@ function styleToCss(style: FlexStyle | undefined): Record<string, string> {
 
   const css: Record<string, string> = {};
 
-  css['display'] = style.display === 'none' ? 'none' : 'flex';
+  css['display'] = style.display === 'none' ? 'none' : style.display === 'grid' ? 'grid' : 'flex';
   css['box-sizing'] = style.boxSizing ?? 'content-box';
-  css['position'] = 'relative';
+  css['position'] = style.position === 'absolute' ? 'absolute' : 'relative';
 
   if (style.flexDirection) css['flex-direction'] = style.flexDirection;
   if (style.flexWrap) css['flex-wrap'] = style.flexWrap;
@@ -36,6 +36,43 @@ function styleToCss(style: FlexStyle | undefined): Record<string, string> {
   if (style.alignItems) css['align-items'] = style.alignItems;
   if (style.alignSelf && style.alignSelf !== 'auto') css['align-self'] = style.alignSelf;
   if (style.alignContent) css['align-content'] = style.alignContent;
+  if (style.justifyItems) css['justify-items'] = style.justifyItems;
+  if (style.justifySelf && style.justifySelf !== 'auto') css['justify-self'] = style.justifySelf;
+
+  // Grid container properties
+  if (style.gridTemplateColumns?.length) {
+    css['grid-template-columns'] = style.gridTemplateColumns.map(t =>
+      typeof t === 'number' ? `${t}px` : t
+    ).join(' ');
+  }
+  if (style.gridTemplateRows?.length) {
+    css['grid-template-rows'] = style.gridTemplateRows.map(t =>
+      typeof t === 'number' ? `${t}px` : t
+    ).join(' ');
+  }
+  if (style.gridAutoColumns !== undefined && style.gridAutoColumns !== 'auto') {
+    css['grid-auto-columns'] = typeof style.gridAutoColumns === 'number'
+      ? `${style.gridAutoColumns}px` : style.gridAutoColumns;
+  }
+  if (style.gridAutoRows !== undefined && style.gridAutoRows !== 'auto') {
+    css['grid-auto-rows'] = typeof style.gridAutoRows === 'number'
+      ? `${style.gridAutoRows}px` : style.gridAutoRows;
+  }
+  if (style.gridAutoFlow) css['grid-auto-flow'] = style.gridAutoFlow;
+
+  // Grid item placement
+  if (style.gridColumnStart !== undefined && style.gridColumnStart !== 'auto') {
+    css['grid-column-start'] = String(style.gridColumnStart);
+  }
+  if (style.gridColumnEnd !== undefined && style.gridColumnEnd !== 'auto') {
+    css['grid-column-end'] = String(style.gridColumnEnd);
+  }
+  if (style.gridRowStart !== undefined && style.gridRowStart !== 'auto') {
+    css['grid-row-start'] = String(style.gridRowStart);
+  }
+  if (style.gridRowEnd !== undefined && style.gridRowEnd !== 'auto') {
+    css['grid-row-end'] = String(style.gridRowEnd);
+  }
 
   if (style.flexGrow !== undefined) css['flex-grow'] = String(style.flexGrow);
   if (style.flexShrink !== undefined) css['flex-shrink'] = String(style.flexShrink);
@@ -92,6 +129,22 @@ function styleToCss(style: FlexStyle | undefined): Record<string, string> {
   if (style.gap !== undefined) css['gap'] = `${style.gap}px`;
   if (style.rowGap !== undefined) css['row-gap'] = `${style.rowGap}px`;
   if (style.columnGap !== undefined) css['column-gap'] = `${style.columnGap}px`;
+
+  // Insets
+  const insetProps = [
+    ['top', style.top],
+    ['right', style.right],
+    ['bottom', style.bottom],
+    ['left', style.left],
+  ] as const;
+  for (const [prop, val] of insetProps) {
+    if (val !== undefined && val !== 'auto') {
+      css[prop] = typeof val === 'number' ? `${val}px` : val;
+    }
+  }
+
+  if (style.zIndex !== undefined) css['z-index'] = String(style.zIndex);
+  if (style.aspectRatio !== undefined) css['aspect-ratio'] = String(style.aspectRatio);
 
   return css;
 }

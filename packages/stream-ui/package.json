@@ -1,7 +1,7 @@
 {
-  "name": "noreflow",
+  "name": "@noreflow/stream-ui",
   "version": "0.1.0",
-  "description": "Pure TypeScript flexbox layout engine. Compute CSS-like flex layouts without DOM or browser dependencies.",
+  "description": "Zero-reflow streaming UI components. Canvas-rendered chat built on noreflow + pretext.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -20,53 +20,46 @@
   },
   "files": [
     "dist",
-    "README.md",
-    "LICENSE"
+    "README.md"
   ],
   "scripts": {
     "build": "tsup",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "bench": "vitest bench",
-    "validate": "npx tsx tests/browser/validate.ts",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm run build"
   },
   "keywords": [
-    "layout",
-    "flexbox",
-    "css-grid",
-    "css",
-    "flex",
-    "yoga",
-    "layout-engine",
-    "canvas",
-    "webgpu",
-    "noreflow",
     "streaming",
-    "reflow",
-    "text-measurement",
+    "chat",
+    "canvas",
+    "layout",
+    "noreflow",
     "pretext",
-    "zero-reflow"
+    "zero-reflow",
+    "ai-chat",
+    "virtual-scroll"
   ],
   "author": "Jake Peterson",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jbpete87/noreflow"
+    "url": "https://github.com/jbpete87/noreflow",
+    "directory": "packages/stream-ui"
   },
-  "homepage": "https://github.com/jbpete87/noreflow",
+  "homepage": "https://github.com/jbpete87/noreflow/tree/main/packages/stream-ui",
   "bugs": {
     "url": "https://github.com/jbpete87/noreflow/issues"
   },
-  "sideEffects": false,
-  "packageManager": "pnpm@10.33.0",
+  "peerDependencies": {
+    "noreflow": ">=0.1.0",
+    "@chenglou/pretext": ">=0.0.3",
+    "react": ">=18.0.0"
+  },
   "devDependencies": {
-    "@playwright/test": "^1.58.2",
-    "playwright": "^1.58.2",
+    "noreflow": "workspace:*",
+    "@chenglou/pretext": "^0.0.3",
+    "react": "^19.1.0",
+    "@types/react": "^19.1.2",
     "tsup": "^8.5.1",
-    "tsx": "^4.21.0",
-    "typescript": "^6.0.2",
-    "vitest": "^4.1.2"
+    "typescript": "^6.0.2"
   }
 }

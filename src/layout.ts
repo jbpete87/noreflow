@@ -9,6 +9,7 @@ import type {
 import { resolveStyle } from './defaults.js';
 import {
   clamp,
+  resolveInset,
   resolveBorder,
   resolveDimension,
   resolveMargin,
@@ -17,6 +18,7 @@ import {
   horizontalInset,
   verticalInset,
 } from './boxModel.js';
+import { layoutGrid } from './gridLayout.js';
 
 // ---------------------------------------------------------------------------
 // Internal item representation used during layout
@@ -80,23 +82,54 @@ function mainAxisIsHorizontal(direction: ResolvedStyle['flexDirection']): boolea
 // computeLayout — the main entry point
 // ---------------------------------------------------------------------------
 
+// Per-computation cache: avoids redundant recursive layoutNode calls
+// on the same node with the same available dimensions.
+let layoutCache: Map<FlexNode, Map<string, LayoutResult>> | null = null;
+
 export function computeLayout(
   node: FlexNode,
   availableWidth: number = Infinity,
   availableHeight: number = Infinity,
 ): LayoutResult {
-  return layoutNode(node, availableWidth, availableHeight);
+  layoutCache = new Map();
+  const result = layoutNode(node, availableWidth, availableHeight);
+  layoutCache = null;
+  return result;
 }
 
 function layoutNode(
   node: FlexNode,
   availableWidth: number,
   availableHeight: number,
+  definiteWidth?: number,
+  definiteHeight?: number,
 ): LayoutResult {
+  if (layoutCache) {
+    const nodeCache = layoutCache.get(node);
+    if (nodeCache) {
+      const key = `${availableWidth},${availableHeight},${definiteWidth ?? ''},${definiteHeight ?? ''}`;
+      const cached = nodeCache.get(key);
+      if (cached) return cached;
+    }
+  }
   const style = resolveStyle(node.style);
 
   if (style.display === 'none') {
     return { x: 0, y: 0, width: 0, height: 0, children: [] };
+  }
+
+  if (style.display === 'grid') {
+    const gridResult = layoutGrid(node, availableWidth, availableHeight, layoutNode);
+    if (layoutCache) {
+      let nodeCache = layoutCache.get(node);
+      if (!nodeCache) {
+        nodeCache = new Map();
+        layoutCache.set(node, nodeCache);
+      }
+      const key = `${availableWidth},${availableHeight},${definiteWidth ?? ''},${definiteHeight ?? ''}`;
+      nodeCache.set(key, gridResult);
+    }
+    return gridResult;
   }
 
   const padding = resolvePadding(style);
@@ -107,6 +140,16 @@ function layoutNode(
   // Resolve container's own size
   let containerWidth = resolveSize(style.width, availableWidth);
   let containerHeight = resolveSize(style.height, availableHeight);
+
+  // When a parent has determined this node's size (via flex-grow or
+  // align-items: stretch), the style may still say 'auto'. Override with the
+  // definite outer dimensions so children can stretch / resolve percentages.
+  if (containerWidth === null && definiteWidth !== undefined) {
+    containerWidth = Math.max(0, definiteWidth - hInset);
+  }
+  if (containerHeight === null && definiteHeight !== undefined) {
+    containerHeight = Math.max(0, definiteHeight - vInset);
+  }
 
   // For border-box, the specified size includes padding+border
   if (style.boxSizing === 'border-box') {
@@ -132,8 +175,29 @@ function layoutNode(
   // ---------------------------------------------------------------------------
 
   const children = node.children ?? [];
-  const items: FlexItem[] = children.map((child) => {
+
+  // Track original child indices so we can reassemble the output in DOM order
+  interface ChildEntry {
+    index: number;
+    child: FlexNode;
+    style: ResolvedStyle;
+  }
+
+  const absoluteChildren: ChildEntry[] = [];
+  const flowChildren: ChildEntry[] = [];
+
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i]!;
     const childStyle = resolveStyle(child.style);
+    const entry: ChildEntry = { index: i, child, style: childStyle };
+    if (childStyle.position === 'absolute') {
+      absoluteChildren.push(entry);
+    } else {
+      flowChildren.push(entry);
+    }
+  }
+
+  const items: FlexItem[] = flowChildren.map(({ child, style: childStyle }) => {
     const childPadding = resolvePadding(childStyle);
     const childBorder = resolveBorder(childStyle);
     return {
@@ -171,8 +235,16 @@ function layoutNode(
     } satisfies FlexItem;
   });
 
-  // Filter out display:none items
-  const visibleItems = items.filter((item) => item.style.display !== 'none');
+  // Filter out display:none items (but track their indices for output)
+  const hiddenFlowIndices: number[] = [];
+  const visibleItems: FlexItem[] = [];
+  for (let i = 0; i < items.length; i++) {
+    if (items[i]!.style.display === 'none') {
+      hiddenFlowIndices.push(flowChildren[i]!.index);
+    } else {
+      visibleItems.push(items[i]!);
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // 9.2 — Determine flex base size and hypothetical main size
@@ -201,19 +273,38 @@ function layoutNode(
         if (item.style.boxSizing === 'border-box') {
           baseSize = Math.max(0, baseSize - mainInset);
         }
+      } else if (item.style.aspectRatio !== undefined) {
+        // Aspect ratio: derive main size from cross size if available
+        const crossSizeValue = horizontal ? item.style.height : item.style.width;
+        const crossInset = horizontal ? childVInset : childHInset;
+        const resolvedCross = resolveSize(crossSizeValue, availableCrossForItems);
+        if (resolvedCross !== null) {
+          let cs = resolvedCross;
+          if (item.style.boxSizing === 'border-box') {
+            cs = Math.max(0, cs - crossInset);
+          }
+          baseSize = horizontal
+            ? cs * item.style.aspectRatio
+            : cs / item.style.aspectRatio;
+        } else {
+          baseSize = 0;
+        }
       } else if (item.measure) {
-        // Content-based sizing via measure callback
+        // Content-based sizing via measure callback.
+        // Pass both axes so text nodes can wrap correctly in column containers
+        // (text height depends on available width, even when width is the cross axis).
         const measured = item.measure(
-          horizontal ? availableMainForItems : Infinity,
-          horizontal ? Infinity : availableMainForItems,
+          horizontal ? availableMainForItems : availableCrossForItems,
+          horizontal ? availableCrossForItems : availableMainForItems,
         );
         baseSize = horizontal ? measured.width : measured.height;
       } else if (item.children.length > 0 && item.style.display === 'flex') {
-        // Nested flex container: compute its layout to get intrinsic size
+        // Nested flex container: compute its layout to get intrinsic size.
+        // Give unlimited space on the main axis and available cross space.
         const childLayout = layoutNode(
           item.node,
-          horizontal ? Infinity : availableMainForItems + mainInset,
-          horizontal ? availableMainForItems + mainInset : Infinity,
+          horizontal ? Infinity : availableCrossForItems + childHInset,
+          horizontal ? availableCrossForItems + childVInset : Infinity,
         );
         baseSize = horizontal
           ? Math.max(0, childLayout.width - childHInset)
@@ -247,7 +338,7 @@ function layoutNode(
     let lineMainSize = 0;
 
     for (const item of visibleItems) {
-      const outerHypo = item.hypotheticalMainSize + outerMainMargin(item, horizontal);
+      const outerHypo = item.hypotheticalMainSize + outerMainAll(item, horizontal);
       const gapSize = currentLine.length > 0 ? mainGap : 0;
 
       if (currentLine.length > 0 && lineMainSize + gapSize + outerHypo > availableMainForItems) {
@@ -298,10 +389,15 @@ function layoutNode(
           cs = Math.max(0, cs - crossInset);
         }
         item.hypotheticalCrossSize = cs;
+      } else if (item.style.aspectRatio !== undefined) {
+        // Derive cross size from the resolved main size via aspect ratio
+        item.hypotheticalCrossSize = horizontal
+          ? item.usedMainSize / item.style.aspectRatio
+          : item.usedMainSize * item.style.aspectRatio;
       } else if (item.measure) {
         const measured = item.measure(
-          horizontal ? item.usedMainSize : Infinity,
-          horizontal ? Infinity : item.usedMainSize,
+          horizontal ? item.usedMainSize : availableCrossForItems,
+          horizontal ? availableCrossForItems : item.usedMainSize,
         );
         item.hypotheticalCrossSize = horizontal ? measured.height : measured.width;
       } else if (item.children.length > 0 && item.style.display === 'flex') {
@@ -334,7 +430,7 @@ function layoutNode(
     for (const line of lines) {
       let maxCross = 0;
       for (const item of line.items) {
-        const outerCross = item.hypotheticalCrossSize + outerCrossMargin(item, horizontal);
+        const outerCross = item.hypotheticalCrossSize + outerCrossAll(item, horizontal);
         if (outerCross > maxCross) maxCross = outerCross;
       }
       line.crossSize = maxCross;
@@ -359,6 +455,7 @@ function layoutNode(
 
       if (
         effectiveAlign === 'stretch' &&
+        item.style.aspectRatio === undefined &&
         (horizontal ? item.style.height : item.style.width) === 'auto' &&
         item.marginTop !== null &&
         item.marginBottom !== null &&
@@ -366,8 +463,11 @@ function layoutNode(
         (horizontal ? item.marginBottom : item.marginRight) !== null
       ) {
         const crossMargin = outerCrossMargin(item, horizontal);
+        const crossInset = horizontal
+          ? verticalInset(item.padding, item.border)
+          : horizontalInset(item.padding, item.border);
         item.usedCrossSize = clamp(
-          line.crossSize - crossMargin,
+          line.crossSize - crossMargin - crossInset,
           item.minCrossSize,
           item.maxCrossSize,
         );
@@ -393,7 +493,7 @@ function layoutNode(
   for (const line of lines) {
     for (const item of line.items) {
       const effectiveAlign = resolveAlignSelf(item.style.alignSelf, style.alignItems);
-      const outerCross = item.usedCrossSize + outerCrossMargin(item, horizontal);
+      const outerCross = item.usedCrossSize + outerCrossAll(item, horizontal);
       const freeSpace = line.crossSize - outerCross;
 
       // Handle auto cross-axis margins
@@ -429,9 +529,13 @@ function layoutNode(
           case 'flex-start':
             item.crossPos = crossStartM;
             break;
-          case 'flex-end':
-            item.crossPos = line.crossSize - item.usedCrossSize - crossEndMarginValue(item, horizontal);
+          case 'flex-end': {
+            const ci = horizontal
+              ? verticalInset(item.padding, item.border)
+              : horizontalInset(item.padding, item.border);
+            item.crossPos = line.crossSize - item.usedCrossSize - ci - crossEndMarginValue(item, horizontal);
             break;
+          }
           case 'center': {
             item.crossPos = crossStartM + freeSpace / 2;
             break;
@@ -482,7 +586,7 @@ function layoutNode(
       let lineSize = 0;
       for (let i = 0; i < line.items.length; i++) {
         const it = line.items[i]!;
-        lineSize += it.usedMainSize + outerMainMargin(it, horizontal);
+        lineSize += it.usedMainSize + outerMainAll(it, horizontal);
         if (i < line.items.length - 1) lineSize += mainGap;
       }
       if (lineSize > usedMainSize) usedMainSize = lineSize;
@@ -511,18 +615,26 @@ function layoutNode(
   // Convert positions to absolute coordinates and recurse
   // ---------------------------------------------------------------------------
 
-  const childLayouts: LayoutResult[] = [];
+  // We collect results indexed by original child position so the output
+  // matches DOM order (abspos children interleaved with flow children).
+  const childLayoutMap = new Map<number, LayoutResult>();
 
-  // Build a map from FlexNode to its position
+  // Build a map from FlexItem -> original child index
+  const itemToOriginalIndex = new Map<FlexItem, number>();
+  for (let i = 0; i < items.length; i++) {
+    itemToOriginalIndex.set(items[i]!, flowChildren[i]!.index);
+  }
+
+  // --- Flow children ---
   for (const line of lines) {
     for (const item of line.items) {
       const mainOffset = horizontal ? padding.left + border.left : padding.top + border.top;
       const crossOffset = horizontal ? padding.top + border.top : padding.left + border.left;
 
-      const itemX = horizontal
+      let itemX = horizontal
         ? mainOffset + item.mainPos
         : crossOffset + line.crossOffset + item.crossPos;
-      const itemY = horizontal
+      let itemY = horizontal
         ? crossOffset + line.crossOffset + item.crossPos
         : mainOffset + item.mainPos;
 
@@ -532,14 +644,34 @@ function layoutNode(
       const itemOuterW = itemW + horizontalInset(item.padding, item.border);
       const itemOuterH = itemH + verticalInset(item.padding, item.border);
 
-      // Recursively layout children of this item
+      // Apply relative positioning offsets
+      if (item.style.position === 'relative') {
+        const insetTop = resolveInset(item.style.top, finalHeight);
+        const insetLeft = resolveInset(item.style.left, finalWidth);
+        const insetBottom = resolveInset(item.style.bottom, finalHeight);
+        const insetRight = resolveInset(item.style.right, finalWidth);
+
+        if (insetLeft !== null) {
+          itemX += insetLeft;
+        } else if (insetRight !== null) {
+          itemX -= insetRight;
+        }
+
+        if (insetTop !== null) {
+          itemY += insetTop;
+        } else if (insetBottom !== null) {
+          itemY -= insetBottom;
+        }
+      }
+
       let itemChildLayouts: LayoutResult[] = [];
       if (item.children.length > 0 && item.style.display === 'flex') {
-        const innerLayout = layoutNode(item.node, itemOuterW, itemOuterH);
+        const innerLayout = layoutNode(item.node, itemOuterW, itemOuterH, itemOuterW, itemOuterH);
         itemChildLayouts = innerLayout.children;
       }
 
-      childLayouts.push({
+      const originalIndex = itemToOriginalIndex.get(item)!;
+      childLayoutMap.set(originalIndex, {
         x: itemX,
         y: itemY,
         width: itemOuterW,
@@ -549,13 +681,150 @@ function layoutNode(
     }
   }
 
-  return {
+  // --- Absolute-positioned children ---
+  // Containing block = the container's padding box (finalWidth x finalHeight minus border)
+  const cbWidth = finalWidth - border.left - border.right;
+  const cbHeight = finalHeight - border.top - border.bottom;
+
+  for (const { index, child, style: absStyle } of absoluteChildren) {
+    if (absStyle.display === 'none') {
+      childLayoutMap.set(index, { x: 0, y: 0, width: 0, height: 0, children: [] });
+      continue;
+    }
+
+    const absPadding = resolvePadding(absStyle);
+    const absBorder = resolveBorder(absStyle);
+    const absHInset = horizontalInset(absPadding, absBorder);
+    const absVInset = verticalInset(absPadding, absBorder);
+
+    // Resolve insets against the containing block
+    const insetTop = resolveInset(absStyle.top, cbHeight);
+    const insetRight = resolveInset(absStyle.right, cbWidth);
+    const insetBottom = resolveInset(absStyle.bottom, cbHeight);
+    const insetLeft = resolveInset(absStyle.left, cbWidth);
+
+    // Resolve explicit size
+    let absW = resolveSize(absStyle.width, cbWidth);
+    let absH = resolveSize(absStyle.height, cbHeight);
+
+    if (absStyle.boxSizing === 'border-box') {
+      if (absW !== null) absW = Math.max(0, absW - absHInset);
+      if (absH !== null) absH = Math.max(0, absH - absVInset);
+    }
+
+    // If width is auto but both left and right are set, derive width from insets
+    if (absW === null && insetLeft !== null && insetRight !== null) {
+      absW = Math.max(0, cbWidth - insetLeft - insetRight - absHInset);
+    }
+    if (absH === null && insetTop !== null && insetBottom !== null) {
+      absH = Math.max(0, cbHeight - insetTop - insetBottom - absVInset);
+    }
+
+    // Apply aspect ratio if one dimension is known and the other is auto
+    if (absStyle.aspectRatio !== undefined) {
+      if (absW !== null && absH === null) {
+        absH = absW / absStyle.aspectRatio;
+      } else if (absH !== null && absW === null) {
+        absW = absH * absStyle.aspectRatio;
+      }
+    }
+
+    // If still auto, use intrinsic sizing
+    if (absW === null || absH === null) {
+      if (child.measure) {
+        const measured = child.measure(absW ?? cbWidth, absH ?? cbHeight);
+        if (absW === null) absW = measured.width;
+        if (absH === null) absH = measured.height;
+      } else if ((child.children ?? []).length > 0 && absStyle.display === 'flex') {
+        const intrinsic = layoutNode(
+          child,
+          absW !== null ? absW + absHInset : cbWidth,
+          absH !== null ? absH + absVInset : cbHeight,
+        );
+        if (absW === null) absW = Math.max(0, intrinsic.width - absHInset);
+        if (absH === null) absH = Math.max(0, intrinsic.height - absVInset);
+      } else {
+        if (absW === null) absW = 0;
+        if (absH === null) absH = 0;
+      }
+    }
+
+    // Clamp by min/max
+    const absMinW = resolveDimension(absStyle.minWidth, cbWidth);
+    const absMaxW = resolveDimension(absStyle.maxWidth, cbWidth);
+    const absMinH = resolveDimension(absStyle.minHeight, cbHeight);
+    const absMaxH = resolveDimension(absStyle.maxHeight, cbHeight);
+    absW = clamp(absW, absMinW, absMaxW);
+    absH = clamp(absH, absMinH, absMaxH);
+
+    const absOuterW = absW + absHInset;
+    const absOuterH = absH + absVInset;
+
+    // Position relative to the padding box (offset by border)
+    let absX: number;
+    if (insetLeft !== null) {
+      absX = border.left + insetLeft;
+    } else if (insetRight !== null) {
+      absX = border.left + cbWidth - insetRight - absOuterW;
+    } else {
+      absX = border.left;
+    }
+
+    let absY: number;
+    if (insetTop !== null) {
+      absY = border.top + insetTop;
+    } else if (insetBottom !== null) {
+      absY = border.top + cbHeight - insetBottom - absOuterH;
+    } else {
+      absY = border.top;
+    }
+
+    // Recursively layout children
+    let absChildLayouts: LayoutResult[] = [];
+    if ((child.children ?? []).length > 0 && absStyle.display === 'flex') {
+      const innerLayout = layoutNode(child, absOuterW, absOuterH);
+      absChildLayouts = innerLayout.children;
+    }
+
+    childLayoutMap.set(index, {
+      x: absX,
+      y: absY,
+      width: absOuterW,
+      height: absOuterH,
+      children: absChildLayouts,
+    });
+  }
+
+  // Hidden flow children get zero-size layouts
+  for (const hiddenIdx of hiddenFlowIndices) {
+    childLayoutMap.set(hiddenIdx, { x: 0, y: 0, width: 0, height: 0, children: [] });
+  }
+
+  // Reassemble in original child order
+  const childLayouts: LayoutResult[] = [];
+  for (let i = 0; i < children.length; i++) {
+    const layout = childLayoutMap.get(i);
+    if (layout) childLayouts.push(layout);
+  }
+
+  const result: LayoutResult = {
     x: 0,
     y: 0,
     width: finalWidth,
     height: finalHeight,
     children: childLayouts,
   };
+
+  if (layoutCache) {
+    let nodeCache = layoutCache.get(node);
+    if (!nodeCache) {
+      nodeCache = new Map();
+      layoutCache.set(node, nodeCache);
+    }
+    nodeCache.set(`${availableWidth},${availableHeight},${definiteWidth ?? ''},${definiteHeight ?? ''}`, result);
+  }
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -570,6 +839,15 @@ function resolveFlexibleLengths(
 ): void {
   if (items.length === 0) return;
 
+  // When available space is infinite (intrinsic measurement), flex-grow/shrink
+  // cannot meaningfully distribute space. Use hypothetical sizes directly.
+  if (!isFinite(availableMain)) {
+    for (const item of items) {
+      item.usedMainSize = Math.max(0, item.hypotheticalMainSize);
+    }
+    return;
+  }
+
   // Total gap space
   const totalGap = gap * (items.length - 1);
 
@@ -582,7 +860,7 @@ function resolveFlexibleLengths(
   // Determine used space from outer hypothetical main sizes
   let usedByHypothetical = totalGap;
   for (const item of items) {
-    usedByHypothetical += item.hypotheticalMainSize + outerMainMargin(item, horizontal);
+    usedByHypothetical += item.hypotheticalMainSize + outerMainAll(item, horizontal);
   }
 
   const growing = usedByHypothetical < availableMain;
@@ -606,9 +884,9 @@ function resolveFlexibleLengths(
   let initialFreeSpace = availableMain - totalGap;
   for (const item of items) {
     if (item.frozen) {
-      initialFreeSpace -= item.targetMainSize + outerMainMargin(item, horizontal);
+      initialFreeSpace -= item.targetMainSize + outerMainAll(item, horizontal);
     } else {
-      initialFreeSpace -= item.flexBaseSize + outerMainMargin(item, horizontal);
+      initialFreeSpace -= item.flexBaseSize + outerMainAll(item, horizontal);
     }
   }
 
@@ -622,9 +900,9 @@ function resolveFlexibleLengths(
     let remainingFreeSpace = availableMain - totalGap;
     for (const item of items) {
       if (item.frozen) {
-        remainingFreeSpace -= item.targetMainSize + outerMainMargin(item, horizontal);
+        remainingFreeSpace -= item.targetMainSize + outerMainAll(item, horizontal);
       } else {
-        remainingFreeSpace -= item.flexBaseSize + outerMainMargin(item, horizontal);
+        remainingFreeSpace -= item.flexBaseSize + outerMainAll(item, horizontal);
       }
     }
 
@@ -742,7 +1020,7 @@ function alignMainAxis(
 
   let usedSpace = totalGap;
   for (const item of items) {
-    usedSpace += item.usedMainSize + outerMainMargin(item, horizontal);
+    usedSpace += item.usedMainSize + outerMainAll(item, horizontal);
   }
 
   const freeSpace = availableMain - usedSpace;
@@ -763,9 +1041,12 @@ function alignMainAxis(
     let pos = 0;
     for (let i = 0; i < items.length; i++) {
       const item = items[i]!;
+      const mainInset = horizontal
+        ? horizontalInset(item.padding, item.border)
+        : verticalInset(item.padding, item.border);
       pos += mainStartMarginValue(item, horizontal);
       item.mainPos = pos;
-      pos += item.usedMainSize + mainEndMarginValue(item, horizontal);
+      pos += item.usedMainSize + mainInset + mainEndMarginValue(item, horizontal);
       if (i < items.length - 1) pos += gap;
     }
     return;
@@ -785,7 +1066,7 @@ function alignMainAxis(
   // Recalculate used space with resolved margins
   usedSpace = totalGap;
   for (const item of items) {
-    usedSpace += item.usedMainSize + outerMainMargin(item, horizontal);
+    usedSpace += item.usedMainSize + outerMainAll(item, horizontal);
   }
   const actualFreeSpace = Math.max(0, availableMain - usedSpace);
 
@@ -828,9 +1109,12 @@ function alignMainAxis(
   let pos = startOffset;
   for (let i = 0; i < items.length; i++) {
     const item = items[i]!;
+    const mainInset = horizontal
+      ? horizontalInset(item.padding, item.border)
+      : verticalInset(item.padding, item.border);
     pos += mainStartMarginValue(item, horizontal);
     item.mainPos = pos;
-    pos += item.usedMainSize + mainEndMarginValue(item, horizontal);
+    pos += item.usedMainSize + mainInset + mainEndMarginValue(item, horizontal);
     if (i < items.length - 1) pos += betweenSpace;
   }
 }
@@ -917,11 +1201,32 @@ function outerMainMargin(item: FlexItem, horizontal: boolean): number {
   return (item.marginTop ?? 0) + (item.marginBottom ?? 0);
 }
 
+/**
+ * Total main-axis "outer" addition: margin + padding + border.
+ * The CSS flex spec requires the outer flex base size (and outer hypothetical
+ * main size) to include all three when computing available/free space.
+ */
+function outerMainAll(item: FlexItem, horizontal: boolean): number {
+  const margin = outerMainMargin(item, horizontal);
+  const inset = horizontal
+    ? horizontalInset(item.padding, item.border)
+    : verticalInset(item.padding, item.border);
+  return margin + inset;
+}
+
 function outerCrossMargin(item: FlexItem, horizontal: boolean): number {
   if (horizontal) {
     return (item.marginTop ?? 0) + (item.marginBottom ?? 0);
   }
   return (item.marginLeft ?? 0) + (item.marginRight ?? 0);
+}
+
+function outerCrossAll(item: FlexItem, horizontal: boolean): number {
+  const margin = outerCrossMargin(item, horizontal);
+  const inset = horizontal
+    ? verticalInset(item.padding, item.border)
+    : horizontalInset(item.padding, item.border);
+  return margin + inset;
 }
 
 function mainStartMarginValue(item: FlexItem, horizontal: boolean): number {

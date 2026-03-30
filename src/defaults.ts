@@ -6,6 +6,7 @@ import type { FlexStyle, ResolvedStyle } from './types.js';
  */
 const DEFAULTS: ResolvedStyle = {
   display: 'flex',
+  position: 'static',
 
   flexDirection: 'row',
   flexWrap: 'nowrap',
@@ -13,6 +14,19 @@ const DEFAULTS: ResolvedStyle = {
   alignItems: 'stretch',
   alignSelf: 'auto',
   alignContent: 'stretch',
+  justifyItems: 'stretch',
+  justifySelf: 'auto',
+
+  gridTemplateColumns: [],
+  gridTemplateRows: [],
+  gridAutoColumns: 'auto',
+  gridAutoRows: 'auto',
+  gridAutoFlow: 'row',
+
+  gridColumnStart: 'auto',
+  gridColumnEnd: 'auto',
+  gridRowStart: 'auto',
+  gridRowEnd: 'auto',
 
   flexGrow: 0,
   flexShrink: 1,
@@ -22,8 +36,17 @@ const DEFAULTS: ResolvedStyle = {
   height: 'auto',
   minWidth: 0,
   minHeight: 0,
-  maxWidth: '100000000%',
-  maxHeight: '100000000%',
+  maxWidth: Infinity,
+  maxHeight: Infinity,
+
+  top: 'auto',
+  right: 'auto',
+  bottom: 'auto',
+  left: 'auto',
+
+  zIndex: 0,
+
+  aspectRatio: undefined,
 
   paddingTop: 0,
   paddingRight: 0,
@@ -56,6 +79,7 @@ export function resolveStyle(style?: FlexStyle): ResolvedStyle {
 
   return {
     display: style.display ?? DEFAULTS.display,
+    position: style.position ?? DEFAULTS.position,
 
     flexDirection: style.flexDirection ?? DEFAULTS.flexDirection,
     flexWrap: style.flexWrap ?? DEFAULTS.flexWrap,
@@ -63,6 +87,19 @@ export function resolveStyle(style?: FlexStyle): ResolvedStyle {
     alignItems: style.alignItems ?? DEFAULTS.alignItems,
     alignSelf: style.alignSelf ?? DEFAULTS.alignSelf,
     alignContent: style.alignContent ?? DEFAULTS.alignContent,
+    justifyItems: style.justifyItems ?? DEFAULTS.justifyItems,
+    justifySelf: style.justifySelf ?? DEFAULTS.justifySelf,
+
+    gridTemplateColumns: style.gridTemplateColumns ?? DEFAULTS.gridTemplateColumns,
+    gridTemplateRows: style.gridTemplateRows ?? DEFAULTS.gridTemplateRows,
+    gridAutoColumns: style.gridAutoColumns ?? DEFAULTS.gridAutoColumns,
+    gridAutoRows: style.gridAutoRows ?? DEFAULTS.gridAutoRows,
+    gridAutoFlow: style.gridAutoFlow ?? DEFAULTS.gridAutoFlow,
+
+    gridColumnStart: style.gridColumnStart ?? DEFAULTS.gridColumnStart,
+    gridColumnEnd: style.gridColumnEnd ?? DEFAULTS.gridColumnEnd,
+    gridRowStart: style.gridRowStart ?? DEFAULTS.gridRowStart,
+    gridRowEnd: style.gridRowEnd ?? DEFAULTS.gridRowEnd,
 
     flexGrow: style.flexGrow ?? DEFAULTS.flexGrow,
     flexShrink: style.flexShrink ?? DEFAULTS.flexShrink,
@@ -74,6 +111,15 @@ export function resolveStyle(style?: FlexStyle): ResolvedStyle {
     minHeight: style.minHeight ?? DEFAULTS.minHeight,
     maxWidth: style.maxWidth ?? DEFAULTS.maxWidth,
     maxHeight: style.maxHeight ?? DEFAULTS.maxHeight,
+
+    top: style.top ?? DEFAULTS.top,
+    right: style.right ?? DEFAULTS.right,
+    bottom: style.bottom ?? DEFAULTS.bottom,
+    left: style.left ?? DEFAULTS.left,
+
+    zIndex: style.zIndex ?? DEFAULTS.zIndex,
+
+    aspectRatio: style.aspectRatio ?? DEFAULTS.aspectRatio,
 
     paddingTop: style.paddingTop ?? style.padding ?? DEFAULTS.paddingTop,
     paddingRight: style.paddingRight ?? style.padding ?? DEFAULTS.paddingRight,

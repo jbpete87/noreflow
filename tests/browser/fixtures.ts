@@ -401,4 +401,346 @@ export const fixtures: Fixture[] = [
       ],
     },
   },
+
+  // -----------------------------------------------------------------------
+  // position: absolute
+  // -----------------------------------------------------------------------
+  {
+    name: 'absolute: top/left positioning',
+    node: {
+      style: { width: 300, height: 300, position: 'relative' },
+      children: [
+        { style: { width: 50, height: 50, position: 'absolute', top: 20, left: 30 } },
+      ],
+    },
+  },
+  {
+    name: 'absolute: bottom/right positioning',
+    node: {
+      style: { width: 300, height: 300, position: 'relative' },
+      children: [
+        { style: { width: 50, height: 50, position: 'absolute', bottom: 10, right: 20 } },
+      ],
+    },
+  },
+  {
+    name: 'absolute: width from left+right insets',
+    node: {
+      style: { width: 400, height: 200, position: 'relative' },
+      children: [
+        { style: { height: 60, position: 'absolute', top: 0, left: 20, right: 30 } },
+      ],
+    },
+  },
+  {
+    name: 'absolute: height from top+bottom insets',
+    node: {
+      style: { width: 200, height: 400, position: 'relative' },
+      children: [
+        { style: { width: 60, position: 'absolute', top: 10, bottom: 20, left: 0 } },
+      ],
+    },
+  },
+  {
+    name: 'absolute: mixed with flow children',
+    node: {
+      style: { width: 300, height: 200, position: 'relative' },
+      children: [
+        { style: { width: 80, height: 50 } },
+        { style: { width: 60, height: 60, position: 'absolute', top: 10, right: 10 } },
+        { style: { width: 80, height: 50 } },
+      ],
+    },
+  },
+  {
+    name: 'absolute: percentage insets',
+    node: {
+      style: { width: 400, height: 200, position: 'relative' },
+      children: [
+        { style: { width: 50, height: 50, position: 'absolute', top: '10%', left: '25%' } },
+      ],
+    },
+  },
+
+  // -----------------------------------------------------------------------
+  // position: relative
+  // -----------------------------------------------------------------------
+  {
+    name: 'relative: offset with top/left',
+    node: {
+      style: { width: 300, height: 100 },
+      children: [
+        { style: { width: 50, height: 50 } },
+        { style: { width: 50, height: 50, position: 'relative', top: 10, left: 20 } },
+        { style: { width: 50, height: 50 } },
+      ],
+    },
+  },
+  {
+    name: 'relative: offset with bottom/right',
+    node: {
+      style: { width: 300, height: 100 },
+      children: [
+        { style: { width: 50, height: 50, position: 'relative', bottom: 15, right: 25 } },
+      ],
+    },
+  },
+
+  // -----------------------------------------------------------------------
+  // aspectRatio
+  // -----------------------------------------------------------------------
+  {
+    name: 'aspectRatio: width given, height derived (2:1)',
+    node: {
+      style: { width: 400, height: 300, alignItems: 'flex-start' },
+      children: [
+        { style: { width: 200, aspectRatio: 2 } },
+      ],
+    },
+  },
+  {
+    name: 'aspectRatio: square',
+    node: {
+      style: { width: 400, height: 400, alignItems: 'flex-start' },
+      children: [
+        { style: { width: 150, aspectRatio: 1 } },
+      ],
+    },
+  },
+  {
+    name: 'aspectRatio: 16/9',
+    node: {
+      style: { width: 400, height: 400, alignItems: 'flex-start' },
+      children: [
+        { style: { width: 320, aspectRatio: 16 / 9 } },
+      ],
+    },
+  },
+  {
+    name: 'aspectRatio: height given, width derived in row',
+    node: {
+      style: { width: 400, height: 200, alignItems: 'flex-start' },
+      children: [
+        { style: { height: 100, aspectRatio: 2 } },
+      ],
+    },
+  },
+  {
+    name: 'aspectRatio: column direction',
+    node: {
+      style: { width: 400, height: 400, flexDirection: 'column', alignItems: 'flex-start' },
+      children: [
+        { style: { height: 100, aspectRatio: 2 } },
+      ],
+    },
+  },
+  {
+    name: 'aspectRatio: with flex-grow',
+    node: {
+      style: { width: 400, height: 300, alignItems: 'flex-start' },
+      children: [
+        { style: { flexGrow: 1, aspectRatio: 2 } },
+      ],
+    },
+  },
+  {
+    name: 'aspectRatio: absolute positioning',
+    node: {
+      style: { width: 400, height: 400, position: 'relative' },
+      children: [
+        { style: { width: 200, aspectRatio: 2, position: 'absolute', top: 10, left: 10 } },
+      ],
+    },
+  },
+  {
+    name: 'aspectRatio: multiple items with different ratios',
+    node: {
+      style: { width: 400, height: 300, alignItems: 'flex-start' },
+      children: [
+        { style: { width: 100, aspectRatio: 1 } },
+        { style: { width: 100, aspectRatio: 2 } },
+        { style: { width: 100, aspectRatio: 0.5 } },
+      ],
+    },
+  },
+
+  // ======================================================================
+  // CSS Grid fixtures
+  // ======================================================================
+
+  {
+    name: 'grid: basic 2x2 fixed tracks',
+    node: {
+      style: {
+        display: 'grid',
+        width: 200,
+        height: 200,
+        gridTemplateColumns: [100, 100],
+        gridTemplateRows: [100, 100],
+      },
+      children: [
+        { style: {} },
+        { style: {} },
+        { style: {} },
+        { style: {} },
+      ],
+    },
+  },
+  {
+    name: 'grid: fr units',
+    node: {
+      style: {
+        display: 'grid',
+        width: 300,
+        height: 100,
+        gridTemplateColumns: ['1fr', '2fr'],
+        gridTemplateRows: [100],
+      },
+      children: [
+        { style: {} },
+        { style: {} },
+      ],
+    },
+  },
+  {
+    name: 'grid: mixed px and fr',
+    node: {
+      style: {
+        display: 'grid',
+        width: 400,
+        height: 100,
+        gridTemplateColumns: [100, '1fr', '1fr'],
+        gridTemplateRows: [100],
+      },
+      children: [
+        { style: {} },
+        { style: {} },
+        { style: {} },
+      ],
+    },
+  },
+  {
+    name: 'grid: percentage tracks',
+    node: {
+      style: {
+        display: 'grid',
+        width: 400,
+        height: 100,
+        gridTemplateColumns: ['25%', '75%'],
+        gridTemplateRows: [100],
+      },
+      children: [
+        { style: {} },
+        { style: {} },
+      ],
+    },
+  },
+  {
+    name: 'grid: row and column gaps',
+    node: {
+      style: {
+        display: 'grid',
+        width: 220,
+        height: 120,
+        gridTemplateColumns: [100, 100],
+        gridTemplateRows: [50, 50],
+        columnGap: 20,
+        rowGap: 20,
+      },
+      children: [
+        { style: {} },
+        { style: {} },
+        { style: {} },
+        { style: {} },
+      ],
+    },
+  },
+  {
+    name: 'grid: explicit placement',
+    node: {
+      style: {
+        display: 'grid',
+        width: 300,
+        height: 200,
+        gridTemplateColumns: [100, 100, 100],
+        gridTemplateRows: [100, 100],
+      },
+      children: [
+        { style: { gridColumnStart: 3, gridRowStart: 2 } },
+        { style: {} },
+        { style: {} },
+      ],
+    },
+  },
+  {
+    name: 'grid: spanning multiple columns',
+    node: {
+      style: {
+        display: 'grid',
+        width: 300,
+        height: 100,
+        gridTemplateColumns: [100, 100, 100],
+        gridTemplateRows: [100],
+      },
+      children: [
+        { style: { gridColumnStart: 1, gridColumnEnd: 3 } },
+        { style: {} },
+      ],
+    },
+  },
+  {
+    name: 'grid: padding on container',
+    node: {
+      style: {
+        display: 'grid',
+        width: 240,
+        height: 140,
+        padding: 20,
+        gridTemplateColumns: [100, 100],
+        gridTemplateRows: [100],
+      },
+      children: [
+        { style: {} },
+        { style: {} },
+      ],
+    },
+  },
+  {
+    name: 'grid: auto rows',
+    node: {
+      style: {
+        display: 'grid',
+        width: 200,
+        height: 300,
+        gridTemplateColumns: [200],
+        gridTemplateRows: [100],
+        gridAutoRows: 50,
+      },
+      children: [
+        { style: {} },
+        { style: {} },
+        { style: {} },
+      ],
+    },
+  },
+  {
+    name: 'grid: nested flex inside grid cell',
+    node: {
+      style: {
+        display: 'grid',
+        width: 300,
+        height: 200,
+        gridTemplateColumns: [300],
+        gridTemplateRows: [200],
+      },
+      children: [
+        {
+          style: { justifyContent: 'center', alignItems: 'center' },
+          children: [
+            { style: { width: 80, height: 80 } },
+          ],
+        },
+      ],
+    },
+  },
 ];

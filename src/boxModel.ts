@@ -1,6 +1,7 @@
 import type {
   DimensionValue,
   EdgeSizes,
+  InsetValue,
   MarginValue,
   ResolvedStyle,
   SizeValue,
@@ -29,7 +30,10 @@ export function resolveSize(
   if (value === 'auto') return null;
   if (typeof value === 'number') return value;
   const pct = parsePercent(value);
-  if (pct !== null) return (pct / 100) * referenceSize;
+  if (pct !== null) {
+    if (!isFinite(referenceSize)) return 0;
+    return (pct / 100) * referenceSize;
+  }
   return null;
 }
 
@@ -43,7 +47,10 @@ export function resolveDimension(
 ): number {
   if (typeof value === 'number') return value;
   const pct = parsePercent(value);
-  if (pct !== null) return (pct / 100) * referenceSize;
+  if (pct !== null) {
+    if (!isFinite(referenceSize)) return 0;
+    return (pct / 100) * referenceSize;
+  }
   return 0;
 }
 
@@ -60,6 +67,21 @@ export function resolveMargin(
   const pct = parsePercent(value);
   if (pct !== null) return (pct / 100) * referenceSize;
   return 0;
+}
+
+/**
+ * Resolve an inset value (top/right/bottom/left) against a reference size.
+ * Returns null for "auto" (meaning the inset is not set).
+ */
+export function resolveInset(
+  value: InsetValue,
+  referenceSize: number,
+): number | null {
+  if (value === 'auto') return null;
+  if (typeof value === 'number') return value;
+  const pct = parsePercent(value);
+  if (pct !== null) return (pct / 100) * referenceSize;
+  return null;
 }
 
 /**
