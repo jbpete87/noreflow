@@ -73,7 +73,6 @@ export function Performance() {
     setRunning(true);
     setResults([]);
 
-    // setTimeout gives React time to paint "Running..." before we block the thread
     setTimeout(() => {
       const benchmarks: BenchResult[] = [];
 
@@ -85,10 +84,8 @@ export function Performance() {
       ];
 
       for (const config of configs) {
-        // Warmup
         computeLayout(config.tree);
 
-        // Calibration: run once to estimate cost, then pick iterations to fill ~200ms
         const probe = globalThis.performance.now();
         computeLayout(config.tree);
         const probeMs = globalThis.performance.now() - probe;
@@ -117,13 +114,13 @@ export function Performance() {
   }, []);
 
   return (
-    <section className="py-24 px-6">
+    <section id="performance" className="py-24 px-6 bg-surface-alt">
       <div className="mx-auto max-w-4xl">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white">
+          <h2 className="text-3xl sm:text-4xl font-bold text-text-primary">
             Performance
           </h2>
-          <p className="mt-3 text-gray-400 max-w-2xl mx-auto">
+          <p className="mt-3 text-text-body max-w-2xl mx-auto">
             Pure TypeScript, no WASM overhead. Run the benchmark live in your browser.
           </p>
         </div>
@@ -132,7 +129,7 @@ export function Performance() {
           <button
             onClick={runBenchmarks}
             disabled={running}
-            className="rounded-xl bg-brand-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 hover:bg-brand-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+            className="rounded-xl bg-emerald-600 px-8 py-3 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
           >
             {running && (
               <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -145,10 +142,10 @@ export function Performance() {
         </div>
 
         {results.length > 0 && (
-          <div key={runCount} className="rounded-2xl border border-white/10 bg-gray-900/80 overflow-hidden animate-fade-in">
+          <div key={runCount} className="rounded-2xl border border-gray-700 bg-gray-900 overflow-hidden animate-fade-in shadow-sm">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-gray-400">
+                <tr className="border-b border-gray-700 text-gray-500">
                   <th className="text-left px-6 py-3 font-medium">Scenario</th>
                   <th className="text-right px-6 py-3 font-medium">Nodes</th>
                   <th className="text-right px-6 py-3 font-medium">Time</th>
@@ -160,7 +157,7 @@ export function Performance() {
                 {results.map((r) => (
                   <tr
                     key={r.name}
-                    className="border-b border-white/5 last:border-0"
+                    className="border-b border-gray-700 last:border-0"
                   >
                     <td className="px-6 py-3 text-gray-200 font-mono">{r.name}</td>
                     <td className="px-6 py-3 text-right text-gray-400">
@@ -171,7 +168,7 @@ export function Performance() {
                         ? `${(r.timeMs * 1000).toFixed(0)}us`
                         : `${r.timeMs.toFixed(1)}ms`}
                     </td>
-                    <td className="px-6 py-3 text-right text-brand-400 font-mono">
+                    <td className="px-6 py-3 text-right text-emerald-400 font-mono">
                       {r.usPerNode}us
                     </td>
                     <td className="px-6 py-3 text-right text-gray-400 font-mono">
@@ -185,30 +182,30 @@ export function Performance() {
         )}
 
         <div className="mt-12 mb-12">
-          <h3 className="text-xl font-semibold text-white mb-2 text-center">
+          <h3 className="text-xl font-semibold text-text-primary mb-2 text-center">
             Noreflow vs Yoga
           </h3>
-          <p className="text-sm text-gray-500 text-center mb-6 max-w-xl mx-auto">
+          <p className="text-sm text-text-muted text-center mb-6 max-w-xl mx-auto">
             Yoga (by Meta) is the industry standard for cross-platform flexbox layout.
             Here's how the two compare.
           </p>
 
-          <div className="rounded-2xl border border-white/10 bg-gray-900/80 overflow-hidden">
+          <div className="rounded-2xl border border-gray-700 bg-gray-900 overflow-hidden shadow-sm">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-gray-400">
+                <tr className="border-b border-gray-700 text-gray-500">
                   <th className="text-left px-6 py-3 font-medium" />
                   <th className="text-center px-6 py-3 font-medium">
-                    <span className="text-brand-400">Noreflow</span>
+                    <span className="text-emerald-400">Noreflow</span>
                   </th>
                   <th className="text-center px-6 py-3 font-medium">
-                    <span className="text-gray-400">Yoga</span>
+                    <span className="text-gray-500">Yoga</span>
                   </th>
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {YOGA_COMPARISON.map((row) => (
-                  <tr key={row.label} className="border-b border-white/5 last:border-0">
+                  <tr key={row.label} className="border-b border-gray-700 last:border-0">
                     <td className="px-6 py-3 text-gray-300">{row.label}</td>
                     <td className="px-6 py-3 text-center">
                       <span className={row.noreflowWins ? 'text-emerald-400 font-medium' : 'text-gray-300'}>
@@ -228,15 +225,15 @@ export function Performance() {
         </div>
 
         <div className="mt-8 grid sm:grid-cols-3 gap-4 text-center">
-          <div className="rounded-xl border border-white/5 bg-gray-900/50 p-6">
+          <div className="rounded-xl border border-gray-700 bg-gray-900 p-6">
             <div className="text-3xl font-bold text-white">0</div>
             <div className="text-sm text-gray-400 mt-1">dependencies</div>
           </div>
-          <div className="rounded-xl border border-white/5 bg-gray-900/50 p-6">
+          <div className="rounded-xl border border-gray-700 bg-gray-900 p-6">
             <div className="text-3xl font-bold text-white">~8kb</div>
             <div className="text-sm text-gray-400 mt-1">gzipped</div>
           </div>
-          <div className="rounded-xl border border-white/5 bg-gray-900/50 p-6">
+          <div className="rounded-xl border border-gray-700 bg-gray-900 p-6">
             <div className="text-3xl font-bold text-white">ESM + CJS</div>
             <div className="text-sm text-gray-400 mt-1">dual output</div>
           </div>

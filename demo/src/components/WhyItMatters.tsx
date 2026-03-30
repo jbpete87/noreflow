@@ -27,13 +27,13 @@ const USE_CASES = [
 
 export function WhyItMatters() {
   return (
-    <section className="py-24 px-6 bg-gray-900/30">
+    <section className="py-24 px-6">
       <div className="mx-auto max-w-7xl">
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white">
+          <h2 className="text-3xl sm:text-4xl font-bold text-text-primary">
             Why Noreflow?
           </h2>
-          <p className="mt-3 text-gray-400 max-w-2xl mx-auto">
+          <p className="mt-3 text-text-body max-w-2xl mx-auto">
             CSS layout algorithms, extracted from the browser and available everywhere.
           </p>
         </div>
@@ -42,13 +42,13 @@ export function WhyItMatters() {
           {USE_CASES.map((uc) => (
             <div
               key={uc.title}
-              className="group rounded-2xl border border-white/5 bg-gray-900/50 p-6 hover:border-brand-500/30 transition-colors"
+              className="rounded-2xl border border-border-subtle bg-surface p-6 hover:border-emerald-600/30 transition-colors"
             >
-              <div className="mb-4 text-brand-400">
+              <div className="mb-4 text-text-muted">
                 <uc.icon />
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">{uc.title}</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
+              <h3 className="text-lg font-semibold text-text-primary mb-2">{uc.title}</h3>
+              <p className="text-sm text-text-body leading-relaxed">
                 {uc.description}
               </p>
             </div>

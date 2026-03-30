@@ -770,32 +770,32 @@ export function LiveChat() {
   }, [render]);
 
   return (
-    <section id="live-demos" className="py-24 px-6" ref={sectionRef}>
+    <section id="live-demos" className="py-24 px-6 bg-surface-alt" ref={sectionRef}>
       <div className="mx-auto max-w-5xl">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 rounded-full bg-brand-600/10 border border-brand-600/20 px-4 py-1.5 text-xs font-medium text-brand-400 mb-4">
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 text-xs font-medium text-emerald-600 mb-4">
             Pretext + Noreflow — Zero DOM, Zero Reflow
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white">
+          <h2 className="text-3xl sm:text-4xl font-bold text-text-primary">
             AI Streaming Without the Jank
           </h2>
-          <p className="mt-3 text-gray-400 max-w-2xl mx-auto">
+          <p className="mt-3 text-text-body max-w-2xl mx-auto">
             Every AI chat — ChatGPT, Claude, Gemini — stutters when streaming responses.
             Each token can wrap text to a new line, changing the message height, triggering a DOM reflow.
-            Watch the response stream below: the message <span className="text-brand-400 font-semibold">grows taller in real time</span> as
-            text wraps, and the layout recomputes every frame. <span className="text-white font-medium">Zero reflows. Zero jank.</span>
+            Watch the response stream below: the message <span className="text-emerald-600 font-semibold">grows taller in real time</span> as
+            text wraps, and the layout recomputes every frame. <span className="text-text-primary font-medium">Zero reflows. Zero jank.</span>
           </p>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-gray-900/80 overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-white/5 bg-gray-900/60">
+        <div className="rounded-2xl border border-border-subtle bg-[#1e1e2e] overflow-hidden shadow-md">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-white/10 bg-[#252536]">
             <div className="flex items-center gap-3">
               <button
                 onClick={streaming ? stop : start}
                 className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition-colors ${
                   streaming
                     ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20'
-                    : 'bg-brand-600 text-white hover:bg-brand-500 shadow-lg shadow-brand-600/25'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
                 }`}
               >
                 {streaming ? 'Stop' : 'Start Demo'}
@@ -815,12 +815,12 @@ export function LiveChat() {
             <div className="flex items-center gap-4 text-xs font-mono flex-wrap">
               {stats.tokens > 0 && (
                 <span className="text-gray-400">
-                  <span className="text-brand-400 font-semibold">{stats.tokens.toLocaleString()}</span> tokens
+                  <span className="text-emerald-400 font-semibold">{stats.tokens.toLocaleString()}</span> tokens
                 </span>
               )}
               {streaming && stats.msgHeight > 0 && (
                 <span className="text-gray-400">
-                  msg: <span className="text-brand-400 font-semibold">{Math.round(stats.msgHeight)}px</span>
+                  msg: <span className="text-emerald-400 font-semibold">{Math.round(stats.msgHeight)}px</span>
                 </span>
               )}
               {stats.reflows > 0 && (
@@ -860,94 +860,64 @@ export function LiveChat() {
           />
         </div>
 
-        <p className="mt-3 text-center text-xs text-gray-600">
+        <p className="mt-3 text-center text-xs text-text-muted">
           Each token triggers a text re-measure (Pretext) and full layout recomputation (Noreflow). Zero DOM access. The message height changes every few words — exactly what causes jank in ChatGPT and Claude.
         </p>
 
         {/* ── Why This Matters ── */}
         <div className="mt-16 grid gap-6 sm:grid-cols-3">
-          <div className="rounded-xl border border-white/5 bg-gray-900/50 p-6">
-            <div className="text-2xl font-bold text-red-400 mb-2">The Wall</div>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              <span className="text-white font-medium">Slack</span> estimates message heights — get it wrong and the scroll jumps.{' '}
-              <span className="text-white font-medium">Google Docs</span> reflows every paragraph below your cursor on each keystroke.{' '}
-              <span className="text-white font-medium">VS Code</span> built Monaco because <code className="text-red-300 text-xs">contenteditable</code> + DOM layout couldn&apos;t keep up.
-              Root cause: <span className="text-red-300 font-medium">text measurement requires the DOM</span>.
+          <div className="rounded-xl border border-border-subtle bg-surface p-6">
+            <div className="text-2xl font-bold text-red-500 mb-2">The Wall</div>
+            <p className="text-sm text-text-body leading-relaxed">
+              <span className="text-text-primary font-medium">Slack</span> estimates message heights — get it wrong and the scroll jumps.{' '}
+              <span className="text-text-primary font-medium">Google Docs</span> reflows every paragraph below your cursor on each keystroke.{' '}
+              <span className="text-text-primary font-medium">VS Code</span> built Monaco because <code className="text-red-600 text-xs bg-red-50 px-1 rounded">contenteditable</code> + DOM layout couldn&apos;t keep up.
+              Root cause: <span className="text-red-600 font-medium">text measurement requires the DOM</span>.
             </p>
           </div>
-          <div className="rounded-xl border border-white/5 bg-gray-900/50 p-6">
-            <div className="text-2xl font-bold text-yellow-400 mb-2">The Bottleneck</div>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              Every AI chat — <span className="text-white font-medium">ChatGPT, Claude, Gemini</span> — janks when streaming.
+          <div className="rounded-xl border border-border-subtle bg-surface p-6">
+            <div className="text-2xl font-bold text-yellow-600 mb-2">The Bottleneck</div>
+            <p className="text-sm text-text-body leading-relaxed">
+              Every AI chat — <span className="text-text-primary font-medium">ChatGPT, Claude, Gemini</span> — janks when streaming.
               Each token can wrap text, changing message height, shifting scroll position.
-              At 20 tokens/sec, that&apos;s <span className="text-yellow-300 font-medium">60 forced reflows/sec</span>.{' '}
-              <span className="text-white font-medium">Figma</span> renders to Canvas because DOM layout can&apos;t handle it.
+              At 20 tokens/sec, that&apos;s <span className="text-yellow-600 font-medium">60 forced reflows/sec</span>.{' '}
+              <span className="text-text-primary font-medium">Figma</span> renders to Canvas because DOM layout can&apos;t handle it.
               Every app that gets big enough hits this wall.
             </p>
           </div>
-          <div className="rounded-xl border border-white/5 bg-gray-900/50 p-6">
-            <div className="text-2xl font-bold text-emerald-400 mb-2">The Fix</div>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              <span className="text-brand-300 font-medium">Pretext</span> computes exact line breaks as pure arithmetic.{' '}
-              <span className="text-brand-300 font-medium">Noreflow</span> computes the full layout from those measurements.
+          <div className="rounded-xl border border-border-subtle bg-surface p-6">
+            <div className="text-2xl font-bold text-emerald-600 mb-2">The Fix</div>
+            <p className="text-sm text-text-body leading-relaxed">
+              <span className="text-emerald-600 font-medium">Pretext</span> computes exact line breaks as pure arithmetic.{' '}
+              <span className="text-emerald-600 font-medium">Noreflow</span> computes the full layout from those measurements.
               The streaming response above recomputes layout on every token —{' '}
-              <span className="text-emerald-300 font-semibold">zero reflows</span>, sub-millisecond, every frame.
+              <span className="text-emerald-600 font-semibold">zero reflows</span>, sub-millisecond, every frame.
               That&apos;s why it doesn&apos;t jank.
             </p>
           </div>
         </div>
 
-        <div className="mt-8 rounded-xl border border-white/5 bg-gray-900/50 p-6">
+        <div className="mt-8 rounded-xl border border-border-subtle bg-surface p-6">
           <div className="flex flex-col sm:flex-row gap-6 sm:gap-10">
             <div className="flex-1">
-              <div className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-3">Traditional (DOM) — per streaming token</div>
-              <div className="space-y-2 text-sm text-gray-400">
-                <div className="flex items-start gap-2">
-                  <span className="text-red-400 mt-0.5 flex-shrink-0">✗</span>
-                  <span>Token arrives → update DOM text content</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-red-400 mt-0.5 flex-shrink-0">✗</span>
-                  <span>Text wraps → browser triggers <span className="text-red-300">reflow</span></span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-red-400 mt-0.5 flex-shrink-0">✗</span>
-                  <span>Read <code className="text-red-300 text-xs">offsetHeight</code> for scroll → <span className="text-red-300">forced reflow</span></span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-red-400 mt-0.5 flex-shrink-0">✗</span>
-                  <span>Update scroll position → <span className="text-red-300">third reflow</span></span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-red-400 mt-0.5 flex-shrink-0">✗</span>
-                  <span>20 tokens/sec × 3 = <span className="text-red-300 font-medium">60 reflows/sec → jank</span></span>
-                </div>
+              <div className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-3">Traditional (DOM) — per streaming token</div>
+              <div className="space-y-2 text-sm text-text-body">
+                <div className="flex items-start gap-2"><span className="text-red-500 mt-0.5 flex-shrink-0">✗</span><span>Token arrives → update DOM text content</span></div>
+                <div className="flex items-start gap-2"><span className="text-red-500 mt-0.5 flex-shrink-0">✗</span><span>Text wraps → browser triggers <span className="text-red-600 font-medium">reflow</span></span></div>
+                <div className="flex items-start gap-2"><span className="text-red-500 mt-0.5 flex-shrink-0">✗</span><span>Read <code className="text-red-600 text-xs bg-red-50 px-1 rounded">offsetHeight</code> for scroll → <span className="text-red-600 font-medium">forced reflow</span></span></div>
+                <div className="flex items-start gap-2"><span className="text-red-500 mt-0.5 flex-shrink-0">✗</span><span>Update scroll position → <span className="text-red-600 font-medium">third reflow</span></span></div>
+                <div className="flex items-start gap-2"><span className="text-red-500 mt-0.5 flex-shrink-0">✗</span><span>20 tokens/sec × 3 = <span className="text-red-600 font-medium">60 reflows/sec → jank</span></span></div>
               </div>
             </div>
-            <div className="hidden sm:block w-px bg-white/5" />
+            <div className="hidden sm:block w-px bg-border-subtle" />
             <div className="flex-1">
-              <div className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3">Pretext + Noreflow — per streaming token</div>
-              <div className="space-y-2 text-sm text-gray-400">
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span>
-                  <span>Token arrives → <code className="text-emerald-300 text-xs">textMeasure(text, font)</code></span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span>
-                  <span>Noreflow calls <code className="text-emerald-300 text-xs">measure(width)</code> → pure arithmetic</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span>
-                  <span>Full tree layout in &lt;1ms — heights, scroll, positions</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span>
-                  <span>Paint to Canvas — <span className="text-emerald-300 font-medium">zero DOM, zero reflow</span></span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span>
-                  <span>Every token, every frame — <span className="text-emerald-300 font-medium">smooth 60+ fps</span></span>
-                </div>
+              <div className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-3">Pretext + Noreflow — per streaming token</div>
+              <div className="space-y-2 text-sm text-text-body">
+                <div className="flex items-start gap-2"><span className="text-emerald-600 mt-0.5 flex-shrink-0">✓</span><span>Token arrives → <code className="text-emerald-700 text-xs bg-emerald-50 px-1 rounded">textMeasure(text, font)</code></span></div>
+                <div className="flex items-start gap-2"><span className="text-emerald-600 mt-0.5 flex-shrink-0">✓</span><span>Noreflow calls <code className="text-emerald-700 text-xs bg-emerald-50 px-1 rounded">measure(width)</code> → pure arithmetic</span></div>
+                <div className="flex items-start gap-2"><span className="text-emerald-600 mt-0.5 flex-shrink-0">✓</span><span>Full tree layout in &lt;1ms — heights, scroll, positions</span></div>
+                <div className="flex items-start gap-2"><span className="text-emerald-600 mt-0.5 flex-shrink-0">✓</span><span>Paint to Canvas — <span className="text-emerald-600 font-medium">zero DOM, zero reflow</span></span></div>
+                <div className="flex items-start gap-2"><span className="text-emerald-600 mt-0.5 flex-shrink-0">✓</span><span>Every token, every frame — <span className="text-emerald-600 font-medium">smooth 60+ fps</span></span></div>
               </div>
             </div>
           </div>

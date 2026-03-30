@@ -11,7 +11,7 @@ import { Footer } from './components/Footer';
 
 export function App() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-page text-text-body">
       <Nav />
       <Hero />
       <LiveChat />
@@ -20,15 +20,9 @@ export function App() {
       </div>
       <Playground />
       <Comparison />
-      <div id="features">
-        <Features />
-      </div>
-      <div id="performance">
-        <Performance />
-      </div>
-      <div id="get-started">
-        <GetStarted />
-      </div>
+      <Features />
+      <Performance />
+      <GetStarted />
       <Footer />
     </div>
   );

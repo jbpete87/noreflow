@@ -143,20 +143,20 @@ function ResultTree({ result, depth = 0 }: { result: LayoutResult; depth?: numbe
         {hasChildren ? (
           <button
             onClick={() => setOpen(!open)}
-            className="text-gray-500 hover:text-gray-300 w-4 text-center shrink-0"
+            className="text-text-muted hover:text-text-primary w-4 text-center shrink-0"
           >
             {open ? '▾' : '▸'}
           </button>
         ) : (
           <span className="w-4 shrink-0" />
         )}
-        <span className="text-gray-400">
+        <span className="text-text-muted">
           {depth === 0 ? 'root' : `[${depth - 1}]`}
         </span>
-        <span className="text-brand-400">
+        <span className="text-emerald-600">
           x:{Math.round(result.x)} y:{Math.round(result.y)}
         </span>
-        <span className="text-gray-300">
+        <span className="text-text-primary">
           {Math.round(result.width)}x{Math.round(result.height)}
         </span>
       </div>
@@ -305,13 +305,13 @@ ctx.fillRect(
     <section id="playground" className="py-24 px-6">
       <div className="mx-auto max-w-7xl">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 rounded-full bg-brand-600/10 border border-brand-600/20 px-4 py-1.5 text-xs font-medium text-brand-400 mb-4">
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 text-xs font-medium text-emerald-600 mb-4">
             One file. One language. Any platform.
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white">
+          <h2 className="text-3xl sm:text-4xl font-bold text-text-primary">
             Interactive Playground
           </h2>
-          <p className="mt-3 text-gray-400 max-w-2xl mx-auto">
+          <p className="mt-3 text-text-body max-w-2xl mx-auto">
             Define layout as a plain JS object — no stylesheets, no class names, no HTML structure to duplicate.
             Get pixel-perfect coordinates you can use on Canvas, React Native, PDF, or anywhere else.
           </p>
@@ -319,7 +319,7 @@ ctx.fillRect(
 
         {/* Presets */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
-          <label className="text-sm text-gray-400 shrink-0">Presets:</label>
+          <label className="text-sm text-text-muted shrink-0">Presets:</label>
           <div className="flex flex-wrap gap-2">
             {presets.map((preset, i) => (
               <button
@@ -327,8 +327,8 @@ ctx.fillRect(
                 onClick={() => handlePresetChange(i)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                   i === presetIndex
-                    ? 'bg-brand-600 text-white'
-                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-200 border border-white/5'
+                    ? 'bg-text-primary text-surface ring-1 ring-text-primary'
+                    : 'bg-surface text-text-body hover:bg-surface-alt border border-border-subtle'
                 }`}
               >
                 {preset.name}
@@ -337,18 +337,18 @@ ctx.fillRect(
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-4">
+        <div className="grid lg:grid-cols-2 gap-6">
           {/* ── Left panel ─────────────────────────────────────────── */}
-          <div className="relative rounded-xl border border-white/10 bg-gray-900/80 overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
+          <div className="relative rounded-xl border border-gray-700 bg-gray-900 overflow-hidden flex flex-col shadow-sm">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setLeftTab('js')}
                     className={`text-[10px] font-mono px-2 py-0.5 rounded transition-colors ${
                       leftTab === 'js'
-                        ? 'bg-brand-600 text-white'
-                        : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
+                        ? 'bg-white text-gray-900'
+                        : 'text-gray-500 hover:text-gray-300'
                     }`}
                   >
                     Builder API
@@ -357,24 +357,24 @@ ctx.fillRect(
                     onClick={() => setLeftTab('json')}
                     className={`text-[10px] font-mono px-2 py-0.5 rounded transition-colors ${
                       leftTab === 'json'
-                        ? 'bg-brand-600 text-white'
-                        : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
+                        ? 'bg-white text-gray-900'
+                        : 'text-gray-500 hover:text-gray-300'
                     }`}
                   >
                     Raw JSON
                   </button>
                 </div>
-                <span className="text-[10px] text-gray-600 font-mono bg-white/5 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] text-gray-500 font-mono">
                   {nodeCount} node{nodeCount !== 1 ? 's' : ''} · {builderLineCount} lines
                 </span>
               </div>
               {error && (
-                <span className="text-xs text-red-400 truncate max-w-[200px]">{error}</span>
+                <span className="text-xs text-red-500 truncate max-w-[200px]">{error}</span>
               )}
             </div>
 
             {leftTab === 'js' ? (
-              <pre className="w-full flex-1 min-h-[500px] bg-transparent text-sm text-gray-200 font-mono p-4 overflow-auto leading-relaxed whitespace-pre">
+              <pre className="w-full flex-1 min-h-[500px] text-sm text-gray-300 font-mono p-4 overflow-auto leading-relaxed whitespace-pre">
                 {builderCode}
               </pre>
             ) : (
@@ -382,19 +382,19 @@ ctx.fillRect(
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 spellCheck={false}
-                className="w-full flex-1 min-h-[500px] bg-transparent text-sm text-gray-200 font-mono p-4 resize-none focus:outline-none leading-relaxed"
+                className="w-full flex-1 min-h-[500px] text-sm text-gray-300 font-mono p-4 resize-none focus:outline-none leading-relaxed bg-transparent"
               />
             )}
           </div>
 
           {/* ── Right panel ────────────────────────────────────────── */}
-          <div className="rounded-xl border border-white/10 bg-gray-900/80 overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
+          <div className="rounded-xl border border-gray-700 bg-gray-900 overflow-hidden flex flex-col shadow-sm">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
               <div className="flex items-center gap-3">
-                <span className="text-[10px] text-brand-400 font-mono bg-brand-400/10 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded-full">
                   {formatTime(computeTimeUs)}
                 </span>
-                <span className="text-xs text-gray-600 font-mono">
+                <span className="text-xs text-gray-500 font-mono">
                   {Math.round(layoutRef.current.width)}x{Math.round(layoutRef.current.height)}
                 </span>
               </div>
@@ -405,8 +405,8 @@ ctx.fillRect(
                     onClick={() => setRightTab(tab.id)}
                     className={`text-[10px] font-mono px-2 py-0.5 rounded transition-colors ${
                       rightTab === tab.id
-                        ? 'bg-brand-600 text-white'
-                        : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
+                        ? 'bg-white text-gray-900'
+                        : 'text-gray-500 hover:text-gray-300'
                     }`}
                   >
                     {tab.label}
@@ -418,7 +418,7 @@ ctx.fillRect(
             {rightTab === 'canvas' && (
               <canvas
                 ref={canvasRef}
-                className="w-full flex-1 min-h-[500px]"
+                className="w-full flex-1 min-h-[500px] bg-gray-950"
                 onMouseMove={handleCanvasMouseMove}
                 onMouseLeave={handleCanvasMouseLeave}
               />
@@ -434,7 +434,7 @@ ctx.fillRect(
               <div className="flex-1 overflow-auto min-h-[500px] flex flex-col">
                 <div className="px-4 pt-4 pb-2">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-semibold text-gray-300">What Noreflow replaces</span>
+                    <span className="text-xs font-semibold text-gray-200">What Noreflow replaces</span>
                     {cssLineCount > 0 && (
                       <span className="text-[10px] text-red-400 bg-red-400/10 px-2 py-0.5 rounded-full font-mono">
                         {cssLineCount} lines
@@ -442,7 +442,7 @@ ctx.fillRect(
                     )}
                   </div>
                   <p className="text-[11px] text-gray-500 leading-relaxed">
-                    Without Noreflow you need <strong className="text-gray-400">HTML structure</strong> + <strong className="text-gray-400">CSS classes</strong> + <strong className="text-gray-400">a browser</strong>.
+                    Without Noreflow you need <strong className="text-gray-300">HTML structure</strong> + <strong className="text-gray-300">CSS classes</strong> + <strong className="text-gray-300">a browser</strong>.
                     The Noreflow version is {builderLineCount} lines of TS that runs anywhere.
                   </p>
                 </div>
@@ -462,11 +462,11 @@ ctx.fillRect(
               <div className="flex-1 overflow-auto min-h-[500px] flex flex-col">
                 <div className="px-4 pt-4 pb-2">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-semibold text-gray-300">How to use the result</span>
+                    <span className="text-xs font-semibold text-gray-200">How to use the result</span>
                     <span className="text-[10px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full font-mono">any platform</span>
                   </div>
                   <p className="text-[11px] text-gray-500 leading-relaxed">
-                    <code className="text-brand-400">computeLayout()</code> returns {'{'}x, y, width, height{'}'} for every node.
+                    <code className="text-emerald-400">computeLayout()</code> returns {'{'}x, y, width, height{'}'} for every node.
                     Use them on Canvas, React Native, PDF, game engines — no browser needed.
                   </p>
                 </div>
@@ -478,17 +478,15 @@ ctx.fillRect(
           </div>
         </div>
 
-        {/* Preset description + line count comparison */}
         <div className="mt-4 text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-text-muted">
             {currentPreset.description}
             {rightTab === 'canvas' && (
-              <span className="text-gray-600"> · Hover over boxes to inspect</span>
+              <span className="text-text-muted"> · Hover over boxes to inspect</span>
             )}
           </p>
         </div>
 
-        {/* Value prop callouts */}
         <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <ValueProp
             label="No CSS Files"
@@ -526,12 +524,12 @@ ctx.fillRect(
 
 function ValueProp({ label, detail, icon }: { label: string; detail: string; icon: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center">
-      <svg className="w-5 h-5 text-brand-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <div className="rounded-xl border border-border-subtle bg-surface p-4 text-center">
+      <svg className="w-5 h-5 text-emerald-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
         {icon}
       </svg>
-      <div className="text-sm font-semibold text-white">{label}</div>
-      <div className="text-[11px] text-gray-500 mt-0.5">{detail}</div>
+      <div className="text-sm font-semibold text-text-primary">{label}</div>
+      <div className="text-[11px] text-text-muted mt-0.5">{detail}</div>
     </div>
   );
 }

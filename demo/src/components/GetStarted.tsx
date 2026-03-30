@@ -1,24 +1,24 @@
 export function GetStarted() {
   return (
-    <section className="py-24 px-6 bg-gray-900/30">
+    <section id="get-started" className="py-24 px-6">
       <div className="mx-auto max-w-3xl">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white">
+          <h2 className="text-3xl sm:text-4xl font-bold text-text-primary">
             Get Started
           </h2>
-          <p className="mt-3 text-gray-400">
+          <p className="mt-3 text-text-body">
             Install Noreflow and compute your first layout in under a minute.
           </p>
         </div>
 
         <div className="space-y-6">
           <div>
-            <div className="text-xs text-gray-500 font-mono mb-2">1. Install</div>
+            <div className="text-xs text-text-muted font-mono mb-2">1. Install</div>
             <CodeBlock code="npm install noreflow" />
           </div>
 
           <div>
-            <div className="text-xs text-gray-500 font-mono mb-2">2. Define a layout tree</div>
+            <div className="text-xs text-text-muted font-mono mb-2">2. Define a layout tree</div>
             <CodeBlock
               code={`import { computeLayout } from 'noreflow';
 
@@ -39,7 +39,7 @@ const layout = computeLayout({
           </div>
 
           <div>
-            <div className="text-xs text-gray-500 font-mono mb-2">3. Use the coordinates</div>
+            <div className="text-xs text-text-muted font-mono mb-2">3. Use the coordinates</div>
             <CodeBlock
               code={`// Each child has { x, y, width, height }
 for (const child of layout.children) {
@@ -54,7 +54,7 @@ for (const child of layout.children) {
             href="https://github.com/jbpete87/noreflow"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-8 py-3.5 text-sm font-semibold text-gray-200 hover:bg-white/10 transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl border border-border-subtle px-8 py-3.5 text-sm font-semibold text-text-body hover:bg-surface-alt transition-colors"
           >
             <GitHubIcon />
             View Full Documentation on GitHub
@@ -67,7 +67,7 @@ for (const child of layout.children) {
 
 function CodeBlock({ code }: { code: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-gray-950/80 overflow-hidden">
+    <div className="rounded-xl border border-gray-700 bg-gray-900 overflow-hidden shadow-sm">
       <pre className="p-4 text-sm text-gray-300 font-mono overflow-x-auto leading-relaxed">
         <code>{code}</code>
       </pre>

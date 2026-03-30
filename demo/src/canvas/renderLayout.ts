@@ -1,14 +1,14 @@
 import type { LayoutResult } from 'noreflow';
 
-const PALETTE = [
-  '#6366f1', // indigo
-  '#8b5cf6', // violet
-  '#06b6d4', // cyan
-  '#10b981', // emerald
-  '#f59e0b', // amber
-  '#ef4444', // red
-  '#ec4899', // pink
-  '#14b8a6', // teal
+const FILLS = [
+  { bg: '#b5afa7' }, // border-subtle (root outline)
+  { bg: '#8d857b' }, // warm stone
+  { bg: '#a39e96' }, // lighter stone
+  { bg: '#7a756f' }, // text-muted
+  { bg: '#968f86' }, // mid tone
+  { bg: '#6b665f' }, // dark stone
+  { bg: '#b0a89f' }, // light taupe
+  { bg: '#857f77' }, // cool stone
 ];
 
 export interface FlatEntry {
@@ -70,68 +70,53 @@ export function renderLayout(
   ctx.translate(padding, padding);
   ctx.scale(autoScale, autoScale);
 
+  // Draw filled shapes with subtle borders — no in-box labels
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i]!;
     const { absX, absY, result, depth } = entry;
-    const color = PALETTE[depth % PALETTE.length]!;
+    const theme = FILLS[depth % FILLS.length]!;
     const isHighlighted = i === highlightIndex;
     const w = result.width;
     const h = result.height;
 
-    ctx.fillStyle = hexToRgba(color, isHighlighted ? 0.35 : 0.15);
-    ctx.fillRect(absX, absY, w, h);
+    const radius = Math.min(4 / autoScale, w / 4, h / 4);
 
-    ctx.strokeStyle = isHighlighted ? '#ffffff' : color;
-    ctx.lineWidth = (isHighlighted ? 2.5 : 1.5) / autoScale;
-    ctx.strokeRect(absX, absY, w, h);
+    ctx.beginPath();
+    ctx.roundRect(absX, absY, w, h, radius);
 
-    if (showLabels && w > 18 && h > 12) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(absX, absY, w, h);
-      ctx.clip();
-
-      const pad = 3 / autoScale;
-      const maxFontPx = Math.min(w / 4, h / 3, 13);
-      const fontSize = Math.max(8, maxFontPx) / autoScale;
-      ctx.font = `500 ${fontSize}px "JetBrains Mono", monospace`;
-
-      if (showDimensions && h > 24) {
-        const dimText = `${Math.round(w)}x${Math.round(h)}`;
-        ctx.fillStyle = color;
-        ctx.fillText(entry.label, absX + pad, absY + fontSize + pad);
-        if (h > fontSize * 2.2 + pad * 2) {
-          ctx.fillStyle = hexToRgba(color, 0.5);
-          ctx.fillText(dimText, absX + pad, absY + fontSize * 2.1 + pad);
-        }
-      } else {
-        ctx.fillStyle = color;
-        const textY = absY + h / 2 + fontSize / 3;
-        ctx.textAlign = 'center';
-        ctx.fillText(entry.label, absX + w / 2, textY);
-        ctx.textAlign = 'start';
-      }
-
-      ctx.restore();
+    if (isHighlighted) {
+      ctx.fillStyle = hexToRgba(theme.bg, 0.9);
+    } else if (depth === 0) {
+      ctx.fillStyle = 'rgba(229,224,218,0.15)';
+    } else {
+      ctx.fillStyle = hexToRgba(theme.bg, 0.55);
     }
+    ctx.fill();
+
+    ctx.strokeStyle = isHighlighted
+      ? 'rgba(26,26,26,0.8)'
+      : depth === 0
+        ? 'rgba(181,175,167,0.4)'
+        : hexToRgba(theme.bg, 0.25);
+    ctx.lineWidth = (isHighlighted ? 2 : 1) / autoScale;
+    ctx.stroke();
   }
 
-  // Draw tooltip for highlighted entry
   if (highlightIndex !== null && highlightIndex < entries.length) {
     const entry = entries[highlightIndex]!;
-    const { absX, absY, result } = entry;
+    const { absX, absY, result, depth } = entry;
 
-    const lines = [
-      `${entry.label}`,
-      `x: ${Math.round(result.x)}  y: ${Math.round(result.y)}`,
-      `w: ${Math.round(result.width)}  h: ${Math.round(result.height)}`,
-    ];
+    const dimStr = `${Math.round(result.width)} x ${Math.round(result.height)}`;
+    const posStr = `pos: (${Math.round(result.x)}, ${Math.round(result.y)})`;
+    const depthStr = `depth: ${depth}`;
+
+    const lines = [entry.label, dimStr, posStr, depthStr];
 
     const tipFontSize = 11 / autoScale;
     ctx.font = `500 ${tipFontSize}px "JetBrains Mono", monospace`;
 
     const lineHeight = tipFontSize * 1.4;
-    const tipPad = 6 / autoScale;
+    const tipPad = 8 / autoScale;
     let tipW = 0;
     for (const line of lines) {
       tipW = Math.max(tipW, ctx.measureText(line).width);
@@ -139,26 +124,30 @@ export function renderLayout(
     tipW += tipPad * 2;
     const tipH = lineHeight * lines.length + tipPad * 2;
 
-    let tipX = absX + result.width + 6 / autoScale;
+    const gap = 8 / autoScale;
+    const minX = -padding / autoScale;
+    const minY = -padding / autoScale;
+    const maxX = (canvasWidth - padding) / autoScale - tipW;
+    const maxY = (canvasHeight - padding) / autoScale - tipH;
+
+    let tipX = absX + result.width + gap;
+    if (tipX > maxX) tipX = absX - tipW - gap;
+    tipX = Math.max(minX, Math.min(tipX, maxX));
+
     let tipY = absY;
-    // Keep tooltip on screen
-    if ((tipX + tipW) * autoScale + padding > canvasWidth) {
-      tipX = absX - tipW - 6 / autoScale;
-    }
-    if ((tipY + tipH) * autoScale + padding > canvasHeight) {
+    if (tipY + tipH > (canvasHeight - padding) / autoScale) {
       tipY = absY + result.height - tipH;
     }
+    tipY = Math.max(minY, Math.min(tipY, maxY));
 
-    ctx.fillStyle = 'rgba(0,0,0,0.85)';
-    const r = 4 / autoScale;
+    const r = 6 / autoScale;
+    ctx.fillStyle = 'rgba(26,26,26,0.94)';
     ctx.beginPath();
     ctx.roundRect(tipX, tipY, tipW, tipH, r);
     ctx.fill();
 
-    ctx.fillStyle = '#e2e8f0';
     for (let j = 0; j < lines.length; j++) {
-      const isTitle = j === 0;
-      ctx.fillStyle = isTitle ? '#a5b4fc' : '#e2e8f0';
+      ctx.fillStyle = j === 0 ? '#6ee7b7' : j === 1 ? '#ffffff' : '#a1a1aa';
       ctx.fillText(lines[j]!, tipX + tipPad, tipY + tipPad + lineHeight * (j + 0.8));
     }
   }
@@ -168,21 +157,15 @@ export function renderLayout(
   return { entries, autoScale, padding };
 }
 
-/**
- * Find the deepest entry whose bounding box contains the given canvas-space point.
- * Returns the index into the entries array, or null.
- */
 export function hitTest(
   state: RenderState,
   canvasX: number,
   canvasY: number,
 ): number | null {
   const { entries, autoScale, padding } = state;
-  // Transform canvas coords back to layout space
   const lx = (canvasX - padding) / autoScale;
   const ly = (canvasY - padding) / autoScale;
 
-  // Walk backwards to find deepest (last-drawn = topmost) hit
   for (let i = entries.length - 1; i >= 0; i--) {
     const e = entries[i]!;
     if (
@@ -203,14 +186,22 @@ export function flattenLayout(
   parentY = 0,
   depth = 0,
   index = 0,
+  parentLabel = '',
 ): FlatEntry[] {
   const absX = parentX + result.x;
   const absY = parentY + result.y;
-  const label = depth === 0 ? 'root' : `${index}`;
+  let label: string;
+  if (depth === 0) {
+    label = 'root';
+  } else if (depth === 1) {
+    label = `child[${index}]`;
+  } else {
+    label = `${parentLabel} > [${index}]`;
+  }
   const entries: FlatEntry[] = [{ result, absX, absY, depth, label }];
   for (let i = 0; i < result.children.length; i++) {
     entries.push(
-      ...flattenLayout(result.children[i]!, absX, absY, depth + 1, i),
+      ...flattenLayout(result.children[i]!, absX, absY, depth + 1, i, label),
     );
   }
   return entries;

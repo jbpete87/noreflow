@@ -2,7 +2,6 @@ import type { Config } from 'tailwindcss';
 
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
-  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
@@ -10,19 +9,14 @@ export default {
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       colors: {
-        brand: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
-          950: '#1e1b4b',
-        },
+        page: '#eae5df',
+        surface: '#f5f2ee',
+        'surface-alt': '#e0dbd4',
+        'border-subtle': '#b5afa7',
+        'border-strong': '#3d3d3d',
+        'text-primary': '#1a1a1a',
+        'text-body': '#3d3d3d',
+        'text-muted': '#7a756f',
       },
     },
   },

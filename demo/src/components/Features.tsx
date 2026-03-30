@@ -69,13 +69,13 @@ const FEATURE_GROUPS = [
 
 export function Features() {
   return (
-    <section className="py-24 px-6 bg-gray-900/30">
+    <section id="features" className="py-24 px-6">
       <div className="mx-auto max-w-7xl">
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white">
+          <h2 className="text-3xl sm:text-4xl font-bold text-text-primary">
             Feature Coverage
           </h2>
-          <p className="mt-3 text-gray-400 max-w-2xl mx-auto">
+          <p className="mt-3 text-text-body max-w-2xl mx-auto">
             Every property is spec-compliant and validated against real browser output.
           </p>
         </div>
@@ -84,16 +84,16 @@ export function Features() {
           {FEATURE_GROUPS.map((group) => (
             <div
               key={group.title}
-              className="rounded-2xl border border-white/5 bg-gray-900/50 p-6"
+              className="rounded-2xl border border-border-subtle bg-surface p-6"
             >
-              <h3 className="text-lg font-semibold text-white mb-4">
+              <h3 className="text-lg font-semibold text-text-primary mb-4">
                 {group.title}
               </h3>
               <ul className="space-y-2.5">
                 {group.items.map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-sm text-gray-400">
+                  <li key={item} className="flex items-start gap-2 text-sm text-text-body">
                     <svg
-                      className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0"
+                      className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={2.5}

@@ -24,16 +24,14 @@ export function Nav() {
     <nav
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'bg-gray-950/80 backdrop-blur-lg border-b border-white/5 shadow-lg shadow-black/20'
+          ? 'bg-page/95 backdrop-blur-sm border-b border-border-strong/30 shadow-sm'
           : 'bg-transparent'
       }`}
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <a href="#" className="flex items-center gap-2">
-            <span className="text-xl font-bold bg-gradient-to-r from-brand-400 to-cyan-400 bg-clip-text text-transparent">
-              Noreflow
-            </span>
+          <a href="#" className="text-xl font-bold text-text-primary">
+            Noreflow
           </a>
 
           <div className="hidden md:flex items-center gap-1">
@@ -41,7 +39,7 @@ export function Nav() {
               <a
                 key={link.href}
                 href={link.href}
-                className="rounded-lg px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-text-primary hover:text-emerald-600 hover:bg-surface-alt transition-colors"
               >
                 {link.label}
               </a>
@@ -50,7 +48,7 @@ export function Nav() {
               href="https://github.com/jbpete87/noreflow"
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-4 rounded-lg bg-white/5 border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/10 transition-colors"
+              className="ml-4 rounded-lg border border-border-strong px-4 py-2 text-sm font-medium text-text-primary hover:text-emerald-600 hover:bg-surface-alt transition-colors"
             >
               GitHub
             </a>
@@ -58,7 +56,7 @@ export function Nav() {
 
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden p-2 text-gray-400 hover:text-white"
+            className="md:hidden p-2 text-text-muted hover:text-text-primary"
             aria-label="Toggle menu"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -73,14 +71,14 @@ export function Nav() {
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden border-t border-white/5 bg-gray-950/95 backdrop-blur-lg">
+        <div className="md:hidden border-t border-border-strong/30 bg-page">
           <div className="px-6 py-4 space-y-1">
             {LINKS.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className="block rounded-lg px-3 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                className="block rounded-lg px-3 py-2.5 text-sm font-medium text-text-primary hover:text-emerald-600 hover:bg-surface-alt transition-colors"
               >
                 {link.label}
               </a>
