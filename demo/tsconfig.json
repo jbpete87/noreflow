@@ -17,8 +17,9 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "noreflow": ["../src/index.ts"],
+      "nopointer": ["../packages/nopointer/src/index.ts"],
       "@noreflow/stream-ui": ["../packages/stream-ui/src/index.ts"]
     }
   },
-  "include": ["src", "../src", "../packages/stream-ui/src"]
+  "include": ["src", "../src", "../packages/nopointer/src", "../packages/stream-ui/src"]
 }

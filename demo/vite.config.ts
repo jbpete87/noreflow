@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       noreflow: path.resolve(__dirname, '../src'),
+      nopointer: path.resolve(__dirname, '../packages/nopointer/src'),
       '@noreflow/stream-ui': path.resolve(__dirname, '../packages/stream-ui/src'),
     },
   },
