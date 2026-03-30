@@ -16,8 +16,9 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "noreflow": ["../src/index.ts"]
+      "noreflow": ["../src/index.ts"],
+      "@noreflow/stream-ui": ["../packages/stream-ui/src/index.ts"]
     }
   },
-  "include": ["src", "../src"]
+  "include": ["src", "../src", "../packages/stream-ui/src"]
 }

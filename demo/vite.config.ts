@@ -7,6 +7,15 @@ export default defineConfig({
   resolve: {
     alias: {
       noreflow: path.resolve(__dirname, '../src'),
+      '@noreflow/stream-ui': path.resolve(__dirname, '../packages/stream-ui/src'),
+    },
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        'stream-test': path.resolve(__dirname, 'stream-test.html'),
+      },
     },
   },
 });

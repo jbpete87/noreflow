@@ -1,6 +1,5 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { computeLayout } from 'noreflow';
-import type { LayoutResult } from 'noreflow';
 import type { StreamMessage, StreamChatConfig, StreamTheme } from './types';
 import { DEFAULT_CONFIG, DEFAULT_THEME } from './types';
 import { measureMessage, buildChatLayout, type MeasuredMessage } from './layout';
@@ -16,7 +15,7 @@ export interface UseStreamLayoutResult {
   nodeCount: number;
 }
 
-export function useStreamLayout(opts: {
+export interface UseStreamLayoutOpts {
   config?: StreamChatConfig;
   theme?: StreamTheme;
   sidebarItems?: string[];
@@ -24,20 +23,36 @@ export function useStreamLayout(opts: {
   subtitle?: string;
   placeholder?: string;
   onFrame?: (stats: { nodeCount: number; layoutMs: number }) => void;
-}): UseStreamLayoutResult {
-  const config = { ...DEFAULT_CONFIG, ...(opts.config ?? {}) } as Required<StreamChatConfig>;
-  const theme = { ...DEFAULT_THEME, ...(opts.theme ?? {}) };
+}
+
+export function useStreamLayout(opts: UseStreamLayoutOpts): UseStreamLayoutResult {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const messagesRef = useRef<MeasuredMessage[]>([]);
   const streamingIdxRef = useRef(-1);
   const rafRef = useRef(0);
   const [nodeCount, setNodeCount] = useState(0);
 
+  // Keep latest opts in a ref so callbacks never go stale and never change identity
+  const optsRef = useRef(opts);
+  optsRef.current = opts;
+
+  const configRef = useRef<Required<StreamChatConfig>>(
+    { ...DEFAULT_CONFIG, ...(opts.config ?? {}) } as Required<StreamChatConfig>,
+  );
+  configRef.current = { ...DEFAULT_CONFIG, ...(opts.config ?? {}) } as Required<StreamChatConfig>;
+
+  const themeRef = useRef<StreamTheme>({ ...DEFAULT_THEME, ...(opts.theme ?? {}) });
+  themeRef.current = { ...DEFAULT_THEME, ...(opts.theme ?? {}) };
+
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    const o = optsRef.current;
+    const config = configRef.current;
+    const theme = themeRef.current;
 
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
@@ -51,7 +66,7 @@ export function useStreamLayout(opts: {
 
     const t0 = performance.now();
     const chatLayout = buildChatLayout(
-      measured, W, H, opts.sidebarItems ?? [], config,
+      measured, W, H, o.sidebarItems ?? [], config,
     );
     const msgsLayout = computeLayout(chatLayout.messages);
     const headerLayout = computeLayout(chatLayout.header);
@@ -60,7 +75,7 @@ export function useStreamLayout(opts: {
     const layoutMs = performance.now() - t0;
 
     setNodeCount(chatLayout.nodeCount);
-    opts.onFrame?.({ nodeCount: chatLayout.nodeCount, layoutMs });
+    o.onFrame?.({ nodeCount: chatLayout.nodeCount, layoutMs });
 
     let streamingHeight = 0;
     let streamingLines = 0;
@@ -89,16 +104,16 @@ export function useStreamLayout(opts: {
       streamingIdx: sIdx,
       streamingHeight,
       streamingLines,
-      sidebarItems: opts.sidebarItems,
-      title: opts.title,
-      subtitle: opts.subtitle,
-      placeholder: opts.placeholder,
+      sidebarItems: o.sidebarItems,
+      title: o.title,
+      subtitle: o.subtitle,
+      placeholder: o.placeholder,
       theme,
       config,
     });
 
     rafRef.current = requestAnimationFrame(draw);
-  }, [config, theme, opts.sidebarItems, opts.title, opts.subtitle, opts.placeholder, opts.onFrame]);
+  }, []); // stable — reads everything from refs
 
   useEffect(() => {
     rafRef.current = requestAnimationFrame(draw);
@@ -106,14 +121,16 @@ export function useStreamLayout(opts: {
   }, [draw]);
 
   const addMessage = useCallback((msg: StreamMessage) => {
+    const config = configRef.current;
     const mm = measureMessage(msg, config);
     messagesRef.current = [...messagesRef.current, mm];
     if (messagesRef.current.length > config.maxMessages) {
       messagesRef.current = messagesRef.current.slice(-config.maxMessages);
     }
-  }, [config]);
+  }, []); // stable
 
   const updateMessage = useCallback((id: string | number, text: string) => {
+    const config = configRef.current;
     const idx = messagesRef.current.findIndex(m => m.msg.id === id);
     if (idx === -1) return;
     const existing = messagesRef.current[idx]!;
@@ -125,7 +142,7 @@ export function useStreamLayout(opts: {
     };
     messagesRef.current = [...messagesRef.current];
     messagesRef.current[idx] = updated;
-  }, [config]);
+  }, []); // stable
 
   const clearMessages = useCallback(() => {
     messagesRef.current = [];
