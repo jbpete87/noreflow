@@ -34,6 +34,8 @@ export interface SceneNode {
   cursor?: CursorStyle;
   /** Mark this node as a scroll container. */
   scrollable?: ScrollAxis;
+  /** When true, drags on this node take priority over ancestor scroll containers. */
+  draggable?: boolean;
   /** Arbitrary user data — widget ref, message id, semantic role, etc. */
   data?: unknown;
 }

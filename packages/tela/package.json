@@ -1,7 +1,7 @@
 {
-  "name": "@noreflow/stream-ui",
+  "name": "tela",
   "version": "0.1.0",
-  "description": "Zero-reflow streaming UI components. Canvas-rendered chat built on noreflow + pretext.",
+  "description": "React renderer for Canvas UIs. Write JSX, render to Canvas. Powered by noreflow + Pretext + nopointer.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -25,47 +25,50 @@
   ],
   "scripts": {
     "build": "tsup",
-    "test": "vitest run",
-    "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm run build"
   },
   "keywords": [
-    "streaming",
-    "chat",
+    "react",
     "canvas",
+    "renderer",
+    "react-reconciler",
     "layout",
     "noreflow",
     "pretext",
+    "nopointer",
     "zero-reflow",
-    "ai-chat",
-    "virtual-scroll"
+    "ui-framework",
+    "tela"
   ],
   "author": "Jake Peterson",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/jbpete87/noreflow",
-    "directory": "packages/stream-ui"
+    "directory": "packages/tela"
   },
-  "homepage": "https://github.com/jbpete87/noreflow/tree/main/packages/stream-ui",
+  "homepage": "https://github.com/jbpete87/noreflow/tree/main/packages/tela",
   "bugs": {
     "url": "https://github.com/jbpete87/noreflow/issues"
   },
+  "sideEffects": false,
   "peerDependencies": {
+    "react": ">=18.0.0",
     "noreflow": ">=0.1.0",
     "nopointer": ">=0.1.0",
-    "@chenglou/pretext": ">=0.0.4",
-    "react": ">=18.0.0"
+    "@chenglou/pretext": ">=0.0.4"
+  },
+  "dependencies": {
+    "react-reconciler": "^0.32.0"
   },
   "devDependencies": {
+    "react": "^19.1.0",
+    "@types/react": "^19.1.2",
     "noreflow": "workspace:*",
     "nopointer": "workspace:*",
     "@chenglou/pretext": "^0.0.4",
-    "react": "^19.1.0",
-    "@types/react": "^19.1.2",
     "tsup": "^8.5.1",
-    "typescript": "^6.0.2",
-    "vitest": "^4.1.2"
+    "typescript": "^6.0.2"
   }
 }

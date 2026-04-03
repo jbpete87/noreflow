@@ -682,6 +682,9 @@ export function LiveChat() {
           const msg = messagesRef.current[ai.messageIndex];
           if (msg) {
             msg.text = partialText;
+            // Pretext has no incremental prepare API — prepareWithSegments must be called
+            // on the full string each time. If Pretext adds append support, this becomes a
+            // single-call update instead of a full re-prepare.
             msg.textHandle = textMeasure(partialText, MSG_FONT, MSG_LINE_HEIGHT);
             tokenCount.current += wordsToAdd;
             reflowsSaved.current += wordsToAdd;

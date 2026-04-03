@@ -300,11 +300,13 @@ function layoutNode(
         baseSize = horizontal ? measured.width : measured.height;
       } else if (item.children.length > 0 && item.style.display === 'flex') {
         // Nested flex container: compute its layout to get intrinsic size.
-        // Give unlimited space on the main axis and available cross space.
+        // Give unlimited space on the main axis and the parent's content
+        // cross size as the child's available outer space. The child will
+        // subtract its own padding/border internally.
         const childLayout = layoutNode(
           item.node,
-          horizontal ? Infinity : availableCrossForItems + childHInset,
-          horizontal ? availableCrossForItems + childVInset : Infinity,
+          horizontal ? Infinity : availableCrossForItems,
+          horizontal ? availableCrossForItems : Infinity,
         );
         baseSize = horizontal
           ? Math.max(0, childLayout.width - childHInset)
@@ -341,6 +343,8 @@ function layoutNode(
       const outerHypo = item.hypotheticalMainSize + outerMainAll(item, horizontal);
       const gapSize = currentLine.length > 0 ? mainGap : 0;
 
+      // When availableMainForItems is Infinity (unconstrained axis), this comparison
+      // never triggers, so all items land on one line — correct for nowrap / unconstrained.
       if (currentLine.length > 0 && lineMainSize + gapSize + outerHypo > availableMainForItems) {
         lines.push({ items: currentLine, crossSize: 0, crossOffset: 0 });
         currentLine = [item];
@@ -403,8 +407,8 @@ function layoutNode(
       } else if (item.children.length > 0 && item.style.display === 'flex') {
         const childLayout = layoutNode(
           item.node,
-          horizontal ? item.usedMainSize + childHInset : availableCrossForItems + childHInset,
-          horizontal ? availableCrossForItems + childVInset : item.usedMainSize + childVInset,
+          horizontal ? item.usedMainSize + childHInset : availableCrossForItems,
+          horizontal ? availableCrossForItems : item.usedMainSize + childVInset,
         );
         item.hypotheticalCrossSize = horizontal
           ? Math.max(0, childLayout.height - childVInset)

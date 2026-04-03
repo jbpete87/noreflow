@@ -1,10 +1,19 @@
 # Noreflow
 
-**Pure TypeScript layout engine. Flexbox + CSS Grid. Zero dependencies. No WASM. No DOM.**
+**Zero-reflow UI engine for AI chat, Canvas apps, and anywhere the DOM is too slow.**
 
 Every time an AI chat streams a token, the browser recalculates the entire page layout. That's why ChatGPT stutters, Claude janks, and every streaming UI feels sluggish. The DOM reflow bottleneck is the performance wall every serious web app hits.
 
-Noreflow computes layout as a pure function — feed it a tree of nodes with styles, get back exact pixel positions. Pair it with [Pretext](https://pretext.dev) for text measurement and you get **zero-reflow rendering** for streaming UIs, virtual scrolling, Canvas apps, and anywhere else DOM layout is too slow.
+Noreflow is the layout layer of a complete browser rendering pipeline in pure TypeScript:
+
+- **[Pretext](https://github.com/chenglou/pretext)** — text measurement (line breaks, wrapping, height) as pure arithmetic
+- **Noreflow** — structural layout (flexbox, CSS Grid, absolute positioning) as a pure function
+- **[nopointer](packages/nopointer/)** — hit-testing, pointer events, gesture recognition, and scroll physics
+- **[Tela](packages/tela/)** — React renderer that ties it all together: write JSX, render to Canvas
+
+Together they replace the browser's Style → Layout → Paint → Events pipeline with deterministic, synchronous TypeScript. No DOM. No reflow. No jank.
+
+<!-- TODO: Add GIF showing streaming chat with and without noreflow (jank vs smooth) -->
 
 ## Install
 
@@ -33,25 +42,9 @@ const layout = computeLayout({
 
 Pure data in, pure data out. No classes, no manual memory management, no `.free()`.
 
-## The Problem
+## The Stack
 
-The DOM reflow bottleneck is THE performance wall every serious web app hits. Every app that's gotten big enough has had to build ugly workarounds:
-
-- **Slack** estimates message heights and gets them wrong (scroll jumping)
-- **Google Docs** slows down on long documents because every keystroke triggers paragraph reflow
-- **VS Code** built an entire custom editor (Monaco) because `contenteditable` + DOM layout couldn't keep up
-- **Figma** renders entirely to Canvas because DOM layout can't handle a design tool
-- **Every AI chat app** (ChatGPT, Claude) janks when streaming because tokens cause text reflow → height changes → scroll jumps
-
-The root cause is the same: the browser's layout engine is a black box that forces synchronous reflow whenever content changes.
-
-## The Solution
-
-Noreflow + [Pretext](https://pretext.dev) = zero-reflow rendering.
-
-1. **Pretext** measures text (line breaks, wrapping, height) as pure arithmetic — no DOM
-2. **Noreflow** computes layout (flexbox, grid, absolute positioning) as a pure function — no DOM
-3. Together they replace the browser's Style → Layout pipeline with deterministic, synchronous TypeScript
+### Use noreflow directly for layout computation
 
 ```typescript
 import { prepareWithSegments, layout } from '@chenglou/pretext';
@@ -83,6 +76,54 @@ const chatMessage = computeLayout({
 ```
 
 The message body height is computed from the actual text without touching the DOM. When a new token arrives, re-run the computation — it takes microseconds.
+
+### Or use Tela for a full React experience
+
+```tsx
+import { Canvas, View, Text, ScrollView, Pressable } from 'tela';
+
+function StreamingChat({ messages }) {
+  return (
+    <Canvas width={400} height={700}>
+      <View style={{ flex: 1, flexDirection: 'column' }}>
+        <ScrollView style={{ flex: 1 }}>
+          {messages.map(m => (
+            <View key={m.id} style={{ padding: 16, flexDirection: 'row', gap: 12 }}>
+              <View style={{ width: 32, height: 32 }} />
+              <Text font="400 14px Inter" lineHeight={20}>{m.text}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    </Canvas>
+  );
+}
+```
+
+Write normal React components. They render to Canvas with zero DOM nodes inside. Full hooks, context, and suspense support. Powered by `react-reconciler`.
+
+## Why This Matters
+
+Every app that's gotten big enough has had to build ugly workarounds for DOM reflow:
+
+- **Google Docs** is [moving off the DOM entirely](https://workspaceupdates.googleblog.com/2021/05/Google-Docs-Canvas-Based-Rendering-Update.html) — they're rendering to Canvas
+- **VS Code** built an entire custom editor (Monaco) because `contenteditable` + DOM layout couldn't keep up
+- **Figma** renders entirely to Canvas because DOM layout can't handle a design tool
+- **Every AI chat app** (ChatGPT, Claude) janks when streaming because tokens cause text reflow → height changes → scroll jumps
+
+The root cause is the same: the browser's layout engine is a black box that forces synchronous reflow whenever content changes. Noreflow replaces it.
+
+## The Ecosystem
+
+| Package | What it does | Install |
+|---------|-------------|---------|
+| **noreflow** | Flexbox + CSS Grid layout engine | `npm i noreflow` |
+| **[nopointer](packages/nopointer/)** | Hit-testing, pointer events, gestures, scroll physics | `npm i nopointer` |
+| **[Tela](packages/tela/)** | React renderer (JSX → Canvas) | `npm i tela` |
+| **[@noreflow/stream-ui](packages/stream-ui/)** | Pre-built streaming chat components | `npm i @noreflow/stream-ui` |
+| **[Pretext](https://github.com/chenglou/pretext)** | Text measurement (by Cheng Lou) | `npm i @chenglou/pretext` |
+
+Noreflow and Pretext are complementary: Pretext handles text-level flow (line breaking, word wrapping), noreflow handles structural layout (flex containers, grid tracks, positioning). A Pretext `measure` callback plugs directly into a noreflow leaf node.
 
 ## Use Cases
 
@@ -160,7 +201,7 @@ const node = {
 };
 ```
 
-This is how you integrate with text measurement libraries like [Pretext](https://pretext.dev).
+This is how you integrate with text measurement libraries like [Pretext](https://github.com/chenglou/pretext).
 
 ## Performance
 
@@ -176,6 +217,9 @@ Benchmarked on Apple M-series, Node.js v24:
 | Wrapped | 1,000 | 280 us | 3,500 |
 | Nested (84 nodes) | 84 | 204 us | 4,900 |
 | Nested (780 nodes) | 780 | 5.2 ms | 192 |
+| Chat message (~15 nodes, Pretext measure) | 15 | ~30 us | ~33,000 |
+
+The chat message benchmark uses a realistic structure: avatar + label + text body with a Pretext `measure` callback. At ~30 us per layout, you can call `computeLayout` on every streaming token at 60fps with budget to spare.
 
 ## Comparison
 
@@ -192,6 +236,8 @@ Benchmarked on Apple M-series, Node.js v24:
 | Dependencies | Zero | None | yoga-layout + pretext |
 | Debugging | JS debugger | WASM boundary | WASM boundary |
 | Tree-shakeable | Yes | No | No |
+
+**Relationship with Pretext:** Pretext handles text-level layout (line breaking, word wrapping, inline flow). Noreflow handles structural layout (flexbox containers, grid tracks, absolute positioning). They operate at different levels and compose naturally — a Pretext `measure` callback plugs into a noreflow leaf node.
 
 ## Current Limitations
 

@@ -80,6 +80,20 @@ export function createPointerSession(config?: GestureConfig): PointerSession {
   }
 
   /**
+   * Check if the hit target or any node between it and the scrollable ancestor
+   * is marked as draggable. Draggable nodes capture drags instead of scrolling.
+   */
+  function findDraggableInPath(path: SceneNode[], target: SceneNode): boolean {
+    if (target.draggable) return true;
+    for (let i = path.length - 1; i >= 0; i--) {
+      const n = path[i]!;
+      if (n.scrollable) return false;
+      if (n.draggable) return true;
+    }
+    return false;
+  }
+
+  /**
    * Compute enter/leave events when the hovered node changes.
    */
   function computeHoverEvents(
@@ -174,7 +188,8 @@ export function createPointerSession(config?: GestureConfig): PointerSession {
           clearLongPress();
 
           const scrollTarget = downHit ? findScrollableAncestor(downHit.path) : null;
-          if (scrollTarget) {
+          const hasDraggable = downHit ? findDraggableInPath(downHit.path, downHit.node) : false;
+          if (scrollTarget && !hasDraggable) {
             state = 'scrolling';
             events.push(makeEvent('scrollstart', downHit, x, y, t));
           } else {
